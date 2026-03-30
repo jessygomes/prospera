@@ -1,19 +1,55 @@
+import Link from "next/link";
+
 type AppNavbarProps = {
   email?: string | null;
   displayName?: string | null;
   onSignOut?: () => Promise<void>;
+  backHref?: string;
+  backLabel?: string;
 };
 
-export function AppNavbar({ email, displayName, onSignOut }: AppNavbarProps) {
+export function AppNavbar({
+  email,
+  displayName,
+  onSignOut,
+  backHref,
+  backLabel = "Dashboard",
+}: AppNavbarProps) {
   const resolvedName = displayName ?? email ?? "Utilisateur";
   const userInitial = resolvedName[0]?.toUpperCase() ?? "U";
 
   return (
     <nav className="sticky top-0 z-10 border-b border-border/60 bg-surface/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <span className="font-heading text-base font-bold tracking-tight text-foreground">
-          Prospera
-        </span>
+        <div className="flex items-center gap-3">
+          {backHref ? (
+            <>
+              <Link
+                href={backHref}
+                className="flex items-center gap-1.5 text-xs font-medium text-foreground/40 transition-colors hover:text-foreground"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                {backLabel}
+              </Link>
+              <span className="select-none text-border/60">/</span>
+            </>
+          ) : null}
+          <span className="font-heading text-base font-bold tracking-tight text-foreground">
+            Prospera
+          </span>
+        </div>
 
         {onSignOut ? (
           <div className="flex items-center gap-4">

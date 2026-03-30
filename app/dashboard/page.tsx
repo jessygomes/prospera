@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 import { AppNavbar } from "@/app/components/app-navbar";
+import { CreateWorkspaceInlineForm } from "./create-workspace-inline-form";
+import { JoinWorkspaceInlineForm } from "./join-workspace-inline-form";
 import { signOutAction } from "./actions";
 
 export default async function DashboardPage() {
@@ -56,6 +59,12 @@ export default async function DashboardPage() {
             <p className="text-xs text-foreground/40 uppercase tracking-wider font-medium">Workspaces</p>
             <p className="mt-1 text-3xl font-bold text-foreground">{memberships.length}</p>
           </div>
+          <div className="col-span-2 rounded-xl border border-border/60 bg-surface p-4 sm:col-span-2 lg:col-span-3">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <CreateWorkspaceInlineForm />
+              <JoinWorkspaceInlineForm />
+            </div>
+          </div>
         </div>
 
         {/* Section workspaces */}
@@ -72,8 +81,9 @@ export default async function DashboardPage() {
               const isOwner = membership.role === "OWNER";
 
               return (
-                <div
+                <Link
                   key={membership.id}
+                  href={`/workspace/${membership.workspace.id}`}
                   className="group relative rounded-xl border border-border/60 bg-surface p-5 transition-all duration-200 hover:border-brand-2/40 hover:shadow-[0_8px_30px_-8px_var(--brand-1)] hover:-translate-y-0.5"
                 >
                   {/* Workspace icon */}
@@ -100,7 +110,7 @@ export default async function DashboardPage() {
                       {membership.role}
                     </span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

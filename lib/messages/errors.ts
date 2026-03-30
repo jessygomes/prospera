@@ -18,4 +18,11 @@ export const ERROR_MESSAGES = {
     idRequired: "Indique un identifiant de workspace.",
     notFound: "Workspace introuvable.",
   },
+  client: {
+    nameRequired: "Le nom du client est requis.",
+    invalidWebsite: "URL de site invalide.",
+    invalidBudget: "Le budget doit etre un nombre positif.",
+    notFound: "Client introuvable.",
+    accessDenied: "Vous n'avez pas acces a ce client.",
+  },
 } as const;

@@ -275,6 +275,8 @@ model Project {
   budgetFinal     Float? // Budget final du projet
   hourlyRate      Float? // Taux horaire si pricingType est HOURLY
 
+  websiteUrl      String? // Lien vers le site web ou la livraison du projet
+
   startDate       DateTime? // Date de début du projet
   deadline        DateTime? // Date limite du projet
   completedAt     DateTime? // Date de fin du projet
