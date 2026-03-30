@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { UI_MESSAGES } from "@/lib/messages/ui";
 import { prisma } from "@/lib/prisma";
 
+import { AppNavbar } from "@/app/components/app-navbar";
 import { signOutAction } from "./actions";
 
 export default async function DashboardPage() {
@@ -24,57 +24,88 @@ export default async function DashboardPage() {
     redirect("/onboarding/workspace");
   }
 
+  const displayName = session.user?.name ?? session.user?.email ?? "Utilisateur";
+
   return (
-    <main className="relative min-h-screen overflow-hidden p-6">
-      <div className="pointer-events-none absolute -left-16 top-12 h-52 w-52 rounded-full bg-[color:var(--brand-1)]/15 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-64 w-64 rounded-full bg-[color:var(--brand-5)]/20 blur-3xl" />
+    <div className="flex min-h-screen flex-col">
+      <AppNavbar
+        displayName={displayName}
+        email={session.user?.email}
+        onSignOut={signOutAction}
+      />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 p-5 shadow-[0_20px_70px_-35px_var(--brand-2)] backdrop-blur">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-[color:var(--brand-2)]">
-                {UI_MESSAGES.dashboard.title}
-              </h1>
-              <p className="text-sm text-[color:var(--brand-4)]/90">
-                {UI_MESSAGES.dashboard.connectedAsPrefix} {session.user?.email}
-              </p>
-            </div>
-            <form action={signOutAction}>
-              <button
-                className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm font-medium text-[color:var(--brand-2)] transition hover:border-[color:var(--brand-3)] hover:bg-[color:var(--brand-5)]/20"
-                type="submit"
-              >
-                {UI_MESSAGES.dashboard.signOut}
-              </button>
-            </form>
+      {/* ── Main content ─────────────────────────────────────────── */}
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+
+        {/* Page heading */}
+        <div className="mb-10">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
+            Tableau de bord
+          </p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">
+            Bonjour, {session.user?.name ?? "là"}&nbsp;👋
+          </h1>
+          <p className="mt-1.5 text-sm text-foreground/50">
+            Retrouvez et gérez vos espaces de travail ci-dessous.
+          </p>
+        </div>
+
+        {/* Stats row */}
+        <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="rounded-xl border border-border/60 bg-surface p-4">
+            <p className="text-xs text-foreground/40 uppercase tracking-wider font-medium">Workspaces</p>
+            <p className="mt-1 text-3xl font-bold text-foreground">{memberships.length}</p>
           </div>
-        </header>
+        </div>
 
-        <section className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 p-5 shadow-[0_20px_70px_-35px_var(--brand-2)] backdrop-blur">
-          <h2 className="mb-3 text-lg font-semibold text-[color:var(--brand-2)]">
-            {UI_MESSAGES.dashboard.workspacesTitle}
-          </h2>
-          <ul className="space-y-2 text-sm">
-            {memberships.map((membership) => (
-              <li
-                key={membership.id}
-                className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3"
-              >
-                <div className="font-medium text-[color:var(--brand-2)]">
-                  {membership.workspace.name}
+        {/* Section workspaces */}
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-foreground/40">
+              Vos espaces de travail
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {memberships.map((membership) => {
+              const initial = membership.workspace.name[0].toUpperCase();
+              const isOwner = membership.role === "OWNER";
+
+              return (
+                <div
+                  key={membership.id}
+                  className="group relative rounded-xl border border-border/60 bg-surface p-5 transition-all duration-200 hover:border-brand-2/40 hover:shadow-[0_8px_30px_-8px_var(--brand-1)] hover:-translate-y-0.5"
+                >
+                  {/* Workspace icon */}
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-brand-1/20 to-brand-3/10 text-base font-bold text-brand-2 ring-1 ring-brand-3/20">
+                    {initial}
+                  </div>
+
+                  <h3 className="font-heading text-base font-semibold text-foreground leading-tight">
+                    {membership.workspace.name}
+                  </h3>
+
+                  <p className="mt-0.5 font-mono text-[10px] text-foreground/30 truncate">
+                    {membership.workspace.id}
+                  </p>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ${
+                        isOwner
+                          ? "bg-brand-1/15 text-brand-2"
+                          : "bg-surface-2 text-foreground/50"
+                      }`}
+                    >
+                      {membership.role}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-[color:var(--brand-4)]/85">
-                  {UI_MESSAGES.dashboard.rolePrefix} {membership.role}
-                </div>
-                <div className="text-[color:var(--brand-4)]/85">
-                  {UI_MESSAGES.dashboard.idPrefix} {membership.workspace.id}
-                </div>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

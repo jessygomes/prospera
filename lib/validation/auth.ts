@@ -14,6 +14,10 @@ export const signUpSchema = z.object({
     .email(ERROR_MESSAGES.auth.invalidEmail)
     .transform((value) => value.trim().toLowerCase()),
   password: z.string().min(8, ERROR_MESSAGES.auth.passwordTooShort),
+  confirmPassword: z.string().min(8, ERROR_MESSAGES.auth.passwordTooShort),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ["confirmPassword"],
+  message: ERROR_MESSAGES.auth.passwordsDoNotMatch,
 });
 
 export type SignInInput = z.infer<typeof signInSchema>;

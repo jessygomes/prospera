@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import Image from "next/image";
 
 import { auth } from "@/auth";
 import { UI_MESSAGES } from "@/lib/messages/ui";
+import { AppNavbar } from "@/app/components/app-navbar";
 
 import { WorkspaceOnboardingForm } from "./workspace-onboarding-form";
+import { signOutAction } from "@/app/dashboard/actions";
 
 export default async function WorkspaceOnboardingPage() {
   const session = await auth();
@@ -13,32 +14,32 @@ export default async function WorkspaceOnboardingPage() {
     redirect("/signin");
   }
 
-  return (
-    <main className="relative min-h-screen overflow-hidden p-6">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col justify-center">
-        {/* <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-          <Image
-            src="/logo.png"
-            alt=""
-            width={1200}
-            height={360}
-            priority
-            aria-hidden
-            className="h-auto w-[min(92vw,1000px)] opacity-5"
-          />
-        </div> */}
+  const displayName =
+    session.user?.name ?? session.user?.email ?? "Utilisateur";
 
-        <div className="mb-6 w-full max-w-3xl text-center">
-          <h1 className="text-2xl font-semibold text-brand-5">
+  return (
+    <div className="flex min-h-screen flex-col">
+      <AppNavbar
+        displayName={displayName}
+        email={session.user?.email}
+        onSignOut={signOutAction}
+      />
+
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <div className="mb-10 text-center">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
+            Onboarding
+          </p>
+          <h1 className="font-heading text-3xl font-bold text-foreground">
             {UI_MESSAGES.workspace.onboarding.pageTitle}
           </h1>
-          <p className="mt-2 text-sm text-brand-5/70">
+          <p className="mx-auto mt-2 max-w-sm text-sm text-foreground/50">
             {UI_MESSAGES.workspace.onboarding.pageSubtitle}
           </p>
         </div>
 
         <WorkspaceOnboardingForm />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

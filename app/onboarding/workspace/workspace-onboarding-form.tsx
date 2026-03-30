@@ -73,38 +73,65 @@ export function WorkspaceOnboardingForm() {
   });
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl gap-10 md:grid-cols-2">
+    <div className="mx-auto grid w-full max-w-2xl gap-4 md:grid-cols-2">
+      {/* ── Créer un workspace ── */}
       <form
         onSubmit={onCreateSubmit}
         noValidate
-        className="flex flex-col gap-3 rounded-xl border border-border bg-noir-1/90 p-5 shadow-[0_20px_50px_-35px_var(--brand-1)] backdrop-blur"
+        className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-surface p-6 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.3)]"
       >
-        <h2 className="text-lg font-semibold text-brand-5">
-          {UI_MESSAGES.workspace.create.title}
-        </h2>
-        <p className="text-xs text-brand-5/70">
-          {UI_MESSAGES.workspace.create.subtitle}
-        </p>
+        <div>
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-brand-1/20 to-brand-3/10 ring-1 ring-brand-3/20">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-brand-2"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </div>
+          <h2 className="font-heading text-base font-bold text-foreground">
+            {UI_MESSAGES.workspace.create.title}
+          </h2>
+          <p className="mt-1 text-xs text-foreground/50">
+            {UI_MESSAGES.workspace.create.subtitle}
+          </p>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          {UI_MESSAGES.workspace.create.nameLabel}
+        <div className="flex flex-col gap-1.5">
+          <label
+            className="block text-xs font-medium text-foreground/50"
+            htmlFor="create-name"
+          >
+            {UI_MESSAGES.workspace.create.nameLabel}
+          </label>
           <input
+            id="create-name"
             {...registerCreate("name")}
-            className="rounded-xl border border-border px-3 py-2 outline-none transition focus:border-brand-3 focus:ring-2 focus:ring-(--brand-5)/60"
+            className="w-full rounded-lg border border-border/70 bg-surface-2/50 px-3 py-2.5 text-sm text-foreground placeholder:text-foreground/30 outline-none transition focus:border-brand-2/60 focus:ring-2 focus:ring-brand-1/15"
             type="text"
             placeholder={UI_MESSAGES.workspace.create.namePlaceholder}
           />
-        </label>
-        {createErrors.name ? (
-          <p className="text-sm text-red-600">{createErrors.name.message}</p>
-        ) : null}
+          {createErrors.name && (
+            <p className="text-xs text-red-400">{createErrors.name.message}</p>
+          )}
+        </div>
 
-        {createServerError ? (
-          <p className="text-sm text-red-600">{createServerError}</p>
-        ) : null}
+        {createServerError && (
+          <p className="rounded-lg bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
+            {createServerError}
+          </p>
+        )}
 
         <button
-          className="cursor-pointer rounded-xl bg-linear-to-r from-brand-4 via-brand-1 to-brand-1 px-4 py-2 font-medium text-white text-xs shadow-[0_12px_30px_-18px_var(--brand-2)] transition hover:brightness-110 disabled:opacity-60"
+          className="mt-auto w-full cursor-pointer rounded-lg bg-linear-to-r from-brand-1 to-brand-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_var(--brand-1)] transition hover:brightness-110 disabled:opacity-60"
           disabled={isCreating}
           type="submit"
         >
@@ -114,39 +141,68 @@ export function WorkspaceOnboardingForm() {
         </button>
       </form>
 
+      {/* ── Rejoindre un workspace ── */}
       <form
         onSubmit={onJoinSubmit}
         noValidate
-        className="flex flex-col gap-3 rounded-xl border border-border bg-noir-1/90 p-5 shadow-[0_20px_50px_-35px_var(--brand-1)] backdrop-blur"
+        className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-surface p-6 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.3)]"
       >
-        <h2 className="text-lg font-semibold text-brand-5">
-          {UI_MESSAGES.workspace.join.title}
-        </h2>
-        <p className="text-xs text-brand-5/70">
-          {UI_MESSAGES.workspace.join.subtitle}
-        </p>
+        <div>
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 ring-1 ring-border/60">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-foreground/50"
+            >
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+          </div>
+          <h2 className="font-heading text-base font-bold text-foreground">
+            {UI_MESSAGES.workspace.join.title}
+          </h2>
+          <p className="mt-1 text-xs text-foreground/50">
+            {UI_MESSAGES.workspace.join.subtitle}
+          </p>
+        </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          {UI_MESSAGES.workspace.join.idLabel}
+        <div className="flex flex-col gap-1.5">
+          <label
+            className="block text-xs font-medium text-foreground/50"
+            htmlFor="join-id"
+          >
+            {UI_MESSAGES.workspace.join.idLabel}
+          </label>
           <input
+            id="join-id"
             {...registerJoin("workspaceId")}
-            className="rounded-xl border border-border px-3 py-2 outline-none transition focus:border-brand-3 focus:ring-2 focus:ring-(--brand-5)/60"
+            className="w-full rounded-lg border border-border/70 bg-surface-2/50 px-3 py-2.5 font-mono text-sm text-foreground placeholder:text-foreground/30 outline-none transition focus:border-brand-2/60 focus:ring-2 focus:ring-brand-1/15"
             type="text"
             placeholder={UI_MESSAGES.workspace.join.idPlaceholder}
           />
-        </label>
-        {joinErrors.workspaceId ? (
-          <p className="text-sm text-red-600">
-            {joinErrors.workspaceId.message}
-          </p>
-        ) : null}
+          {joinErrors.workspaceId && (
+            <p className="text-xs text-red-400">
+              {joinErrors.workspaceId.message}
+            </p>
+          )}
+        </div>
 
-        {joinServerError ? (
-          <p className="text-sm text-red-600">{joinServerError}</p>
-        ) : null}
+        {joinServerError && (
+          <p className="rounded-lg bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
+            {joinServerError}
+          </p>
+        )}
 
         <button
-          className="cursor-pointer rounded-xl bg-linear-to-r from-brand-1 via-brand-4 to-brand-4 px-4 py-2 font-medium text-white text-xs shadow-[0_12px_30px_-18px_var(--brand-2)] transition hover:brightness-110 disabled:opacity-60"
+          className="mt-auto w-full cursor-pointer rounded-lg border border-border/70 bg-surface-2 py-2.5 text-sm font-semibold text-foreground/70 transition hover:border-brand-2/40 hover:text-foreground disabled:opacity-60"
           disabled={isJoining}
           type="submit"
         >

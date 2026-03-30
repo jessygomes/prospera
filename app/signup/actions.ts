@@ -18,6 +18,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpState> {
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
   });
 
   if (!parsed.success) {

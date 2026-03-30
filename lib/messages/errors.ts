@@ -6,6 +6,7 @@ export const ERROR_MESSAGES = {
     invalidEmail: "Email invalide.",
     passwordRequired: "Mot de passe requis.",
     passwordTooShort: "Le mot de passe doit contenir au moins 8 caracteres.",
+    passwordsDoNotMatch: "Les mots de passe ne correspondent pas.",
     invalidCredentials: "Email ou mot de passe invalide.",
     accountAlreadyExists: "Un compte existe deja avec cet email.",
     autoSignInFailed:

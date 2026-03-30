@@ -18,6 +18,7 @@ export const UI_MESSAGES = {
       nameLabel: "Nom",
       emailLabel: "Email",
       passwordLabel: "Mot de passe",
+      confirmPasswordLabel: "Confirmer le mot de passe",
       submit: "Créer mon compte",
       submitting: "Création...",
       hasAccountPrefix: "Déjà inscrit ?",
