@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppNavbar } from "@/app/components/app-navbar";
+import { AppNavbar } from "@/components/shared/app-navbar";
 import { prisma } from "@/lib/prisma";
 import { signOutAction } from "@/app/dashboard/actions";
 import { NewClientForm } from "./new-client-form";
@@ -36,7 +36,7 @@ export default async function NewClientPage({ params }: PageProps) {
         backLabel="Clients"
       />
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-20 py-10">
         <div className="mb-10">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
             Nouveau client

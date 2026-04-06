@@ -9,7 +9,11 @@ import { signUpAction } from "./actions";
 import { UI_MESSAGES } from "@/lib/messages/ui";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth";
 
-export function SignUpForm() {
+type SignUpFormProps = {
+  callbackUrl?: string;
+};
+
+export function SignUpForm({ callbackUrl }: SignUpFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -37,6 +41,9 @@ export function SignUpForm() {
     formData.set("email", values.email);
     formData.set("password", values.password);
     formData.set("confirmPassword", values.confirmPassword);
+    if (callbackUrl) {
+      formData.set("callbackUrl", callbackUrl);
+    }
 
     startTransition(async () => {
       const result = await signUpAction(formData);
@@ -202,7 +209,11 @@ export function SignUpForm() {
         {UI_MESSAGES.auth.signUp.hasAccountPrefix}{" "}
         <Link
           className="font-medium text-brand-3 transition-colors hover:text-brand-2"
-          href="/signin"
+          href={
+            callbackUrl
+              ? `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
+              : "/signin"
+          }
         >
           {UI_MESSAGES.auth.signUp.hasAccountCta}
         </Link>

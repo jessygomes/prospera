@@ -88,30 +88,34 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(client.status);
   const [statusChangeNote, setStatusChangeNote] = useState("");
   const [isPendingSave, startSaveTransition] = useTransition();
   const [isPendingDelete, startDeleteTransition] = useTransition();
 
+  const defaultFormValues = {
+    fullName: client.fullName,
+    email: client.email ?? "",
+    phone: client.phone ?? "",
+    company: client.company ?? "",
+    jobTitle: client.jobTitle ?? "",
+    website: client.website ?? "",
+    status: client.status,
+    priority: client.priority,
+    source: client.source ?? undefined,
+    budgetEstimated: client.budgetEstimated ?? undefined,
+    notes: client.notes ?? "",
+  };
+
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(createClientSchema),
-    defaultValues: {
-      fullName: client.fullName,
-      email: client.email ?? "",
-      phone: client.phone ?? "",
-      company: client.company ?? "",
-      jobTitle: client.jobTitle ?? "",
-      website: client.website ?? "",
-      status: client.status,
-      priority: client.priority,
-      source: client.source ?? undefined,
-      budgetEstimated: client.budgetEstimated ?? undefined,
-      notes: client.notes ?? "",
-    },
+    defaultValues: defaultFormValues,
   });
   const hasStatusChanged = selectedStatus !== client.status;
   const statusRegister = register("status");
@@ -149,6 +153,7 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
         setSaveError(result.error);
         return;
       }
+      setIsEditing(false);
       router.refresh();
     });
   });
@@ -165,8 +170,201 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
     });
   }
 
+  function cancelEdit() {
+    reset(defaultFormValues);
+    setSelectedStatus(client.status);
+    setStatusChangeNote("");
+    setSaveError(null);
+    setDeleteError(null);
+    setConfirmDelete(false);
+    setIsEditing(false);
+  }
+
+  const statusLabel =
+    STATUS_OPTIONS.find((option) => option.value === client.status)?.label ??
+    client.status;
+  const priorityLabel =
+    PRIORITY_OPTIONS.find((option) => option.value === client.priority)
+      ?.label ?? client.priority;
+  const sourceLabel =
+    SOURCE_OPTIONS.find((option) => option.value === (client.source ?? ""))
+      ?.label ?? "— Non renseigne";
+  const budgetLabel =
+    client.budgetEstimated !== null
+      ? new Intl.NumberFormat("fr-FR", {
+          style: "currency",
+          currency: "EUR",
+          maximumFractionDigits: 0,
+        }).format(client.budgetEstimated)
+      : "—";
+
+  if (!isEditing) {
+    return (
+      <div className="space-y-3.5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-foreground/40">
+              Informations client
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4"
+          >
+            Modifier
+          </button>
+        </div>
+
+        <section className="rounded-xl border border-border/60 bg-surface-2/20 p-3">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+            Informations principales
+          </h3>
+          <dl className="grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Nom complet
+              </dt>
+              <dd className="mt-0.5 font-medium text-foreground/80">
+                {client.fullName}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Entreprise
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.company ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Poste
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.jobTitle ?? "—"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="rounded-xl border border-border/60 bg-surface-2/20 p-3">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+            Contact
+          </h3>
+          <dl className="grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Email
+              </dt>
+              <dd className="mt-0.5 break-all text-foreground/75">
+                {client.email ? (
+                  <a
+                    href={`mailto:${client.email}`}
+                    className="font-medium text-brand-2 hover:underline"
+                  >
+                    {client.email}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Telephone
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.phone ?? "—"}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Site web
+              </dt>
+              <dd className="mt-0.5 break-all text-foreground/75">
+                {client.website ? (
+                  <a
+                    href={client.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-brand-2 hover:underline"
+                  >
+                    {client.website}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="rounded-xl border border-border/60 bg-surface-2/20 p-3">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+            Pipeline
+          </h3>
+          <dl className="grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Statut
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">{statusLabel}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Priorite
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">{priorityLabel}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Source
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">{sourceLabel}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Budget estime
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">{budgetLabel}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-2.5 border-t border-border/50 pt-2.5">
+            <p className="text-[11px] uppercase tracking-wider text-foreground/35">
+              Notes
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/75">
+              {client.notes?.trim() ? client.notes : "Aucune note client."}
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-foreground/40">
+            Edition client
+          </h2>
+          <p className="mt-1 text-sm text-foreground/55">
+            Modifiez les informations puis sauvegardez les changements.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={cancelEdit}
+          disabled={isPendingSave || isPendingDelete}
+          className="rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground disabled:opacity-50"
+        >
+          Annuler modifications
+        </button>
+      </div>
+
       <section>
         <h2 className="mb-3 border-b border-border/50 pb-2 text-xs font-semibold uppercase tracking-widest text-foreground/40">
           Informations principales
@@ -323,11 +521,11 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => router.push(`/workspace/${workspaceId}/clients`)}
+            onClick={cancelEdit}
             disabled={isPendingSave || isPendingDelete}
             className="rounded-lg border border-border/70 bg-surface px-4 py-2 text-sm font-medium text-foreground/60 transition hover:text-foreground disabled:opacity-50"
           >
-            Retour liste
+            Annuler
           </button>
         </div>
 

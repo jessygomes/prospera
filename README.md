@@ -4,6 +4,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 La documentation de modelisation CRM est disponible dans `prisma/README.md`.
 
+## Documentation IA
+
+La documentation d'implementation et d'utilisation des conseils IA client est disponible dans `docs/ia-conseils-client.md`.
+
 ## Getting Started
 
 First, run the development server:

@@ -9,7 +9,11 @@ import { signInAction } from "./actions";
 import { UI_MESSAGES } from "@/lib/messages/ui";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth";
 
-export function SignInForm() {
+type SignInFormProps = {
+  callbackUrl?: string;
+};
+
+export function SignInForm({ callbackUrl }: SignInFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -31,6 +35,9 @@ export function SignInForm() {
     const formData = new FormData();
     formData.set("email", values.email);
     formData.set("password", values.password);
+    if (callbackUrl) {
+      formData.set("callbackUrl", callbackUrl);
+    }
 
     startTransition(async () => {
       const result = await signInAction(formData);
@@ -122,7 +129,11 @@ export function SignInForm() {
         {UI_MESSAGES.auth.signIn.noAccountPrefix}{" "}
         <Link
           className="font-medium text-brand-3 transition-colors hover:text-brand-2"
-          href="/signup"
+          href={
+            callbackUrl
+              ? `/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`
+              : "/signup"
+          }
         >
           {UI_MESSAGES.auth.signIn.noAccountCta}
         </Link>

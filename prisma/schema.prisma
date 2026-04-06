@@ -45,6 +45,8 @@ model User {
   clientStatusChanges ClientStatusHistory[] @relation("ClientStatusChangedBy")
   // Historique des changements de statut projet effectues par cet utilisateur.
   projectStatusChanges ProjectStatusHistory[] @relation("ProjectStatusChangedBy")
+  // Liens d'invitation de workspace crees par cet utilisateur.
+  workspaceInviteLinks WorkspaceInviteLink[]
 }
 
 model Workspace {
@@ -71,6 +73,7 @@ model Workspace {
   invoiceItems InvoiceItem[]
   documents Document[]
   aiGenerations AiGeneration[]
+  inviteLinks WorkspaceInviteLink[]
 }
 
 model WorkspaceMember {
@@ -87,6 +90,25 @@ model WorkspaceMember {
   createdAt   DateTime @default(now())
 
   @@unique([userId, workspaceId])
+}
+
+model WorkspaceInviteLink {
+  id          String        @id @default(cuid())
+  workspaceId String
+  createdById String?
+  role        WorkspaceRole @default(MEMBER)
+  tokenHash   String        @unique
+  expiresAt   DateTime
+  maxUses     Int           @default(1)
+  useCount    Int           @default(0)
+  revokedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, revokedAt, expiresAt])
 }
 
 enum WorkspaceRole {
@@ -123,6 +145,7 @@ model Client {
 
   notes            String?
   tags             String[]
+  aiInsights       Json?
 
   workspaceId      String
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -156,6 +179,10 @@ model ClientAction {
 
   title       String // Titre de l'action (ex: "Appeler pour relance", "Envoyer proposition", "Réunion de découverte")
   description String? // Description de l'action (ex: "Appeler pour relance", "Envoyer proposition", "Réunion de découverte")
+  interactionSummary   String? // Resume humain de l interaction
+  interactionOutcome   ClientInteractionOutcome?
+  interactionSentiment ClientInteractionSentiment?
+  interactionObjections String[] @default([])
 
   dueDate     DateTime? // Date d'échéance de l'action
   doneAt      DateTime? // Date de réalisation de l'action
@@ -175,6 +202,11 @@ model ClientAction {
   assignedToId String?
   assignedTo   User? @relation("ClientActionAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  // Permet de chainer les interactions dans un tunnel commercial.
+  previousActionId String?
+  previousAction   ClientAction? @relation("ActionChain", fields: [previousActionId], references: [id], onDelete: SetNull)
+  nextActions      ClientAction[] @relation("ActionChain")
+
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
@@ -183,10 +215,26 @@ model ClientAction {
   @@index([clientId])
   @@index([status])
   @@index([dueDate])
+  @@index([previousActionId])
   // Optimise les ecrans "actions du jour" et "actions en retard".
   @@index([workspaceId, status, dueDate])
   // Optimise la to-do commerciale par collaborateur.
   @@index([assignedToId, status, dueDate])
+}
+
+enum ClientInteractionOutcome {
+  NO_RESPONSE
+  INTERESTED
+  NOT_INTERESTED
+  NEEDS_TIME
+  WON
+  LOST
+}
+
+enum ClientInteractionSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
 }
 
 model ClientNote {
@@ -474,6 +522,12 @@ model AiGeneration {
   costUsd      Decimal?         @db.Decimal(12, 6)
   // Metadonnees libres (temperature, latency, etc.).
   metadata     Json?
+  // Version fonctionnelle du prompt/conseil pour audit.
+  version      String?
+  // Retour utilisateur sur la qualite du conseil (ex: -1, 1, ou 1..5).
+  feedbackScore Int?
+  feedbackNote String?
+  feedbackAt   DateTime?
 
   workspaceId  String
   workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -494,12 +548,15 @@ model AiGeneration {
   @@index([type])
   // Optimise les historiques IA recents par workspace.
   @@index([workspaceId, createdAt])
+  @@index([workspaceId, type, createdAt])
 }
 
 enum AiGenerationType {
   CLIENT_EMAIL
   DISCUSSION_SUMMARY
   PRICE_SUGGESTION
+  CLIENT_INSIGHTS
+  NEXT_ACTION_ADVICE
 }
 
 //////////////////////////////////////////////////////

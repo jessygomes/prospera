@@ -4,10 +4,20 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { generateInviteToken, hashInviteToken } from "@/lib/invite-link";
 import { ERROR_MESSAGES } from "@/lib/messages/errors";
 import { prisma } from "@/lib/prisma";
 
 export type WorkspaceMemberActionState = {
+  error?: string;
+};
+
+export type CreateInviteLinkActionState = {
+  error?: string;
+  inviteToken?: string;
+};
+
+export type WorkspaceSettingsActionState = {
   error?: string;
 };
 
@@ -115,5 +125,121 @@ export async function removeMemberAction(
   await prisma.workspaceMember.delete({ where: { id: memberId } });
 
   revalidatePath(`/workspace/${workspaceId}`);
+  return {};
+}
+
+export async function createInviteLinkAction(
+  formData: FormData,
+): Promise<CreateInviteLinkActionState> {
+  const callerId = await getCurrentUserId();
+  const workspaceId = String(formData.get("workspaceId") ?? "");
+  const role = String(formData.get("role") ?? "MEMBER") as "ADMIN" | "MEMBER";
+  const expiresInDays = Number(formData.get("expiresInDays") ?? 7);
+
+  if (!workspaceId || !["ADMIN", "MEMBER"].includes(role)) {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  if (
+    !Number.isFinite(expiresInDays) ||
+    expiresInDays < 1 ||
+    expiresInDays > 30
+  ) {
+    return {
+      error: "La durée de validité doit être comprise entre 1 et 30 jours.",
+    };
+  }
+
+  try {
+    await requireManagerRole(callerId, workspaceId);
+  } catch {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  const inviteToken = generateInviteToken();
+  const tokenHash = hashInviteToken(inviteToken);
+
+  await prisma.workspaceInviteLink.create({
+    data: {
+      workspaceId,
+      createdById: callerId,
+      role,
+      tokenHash,
+      expiresAt: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000),
+      maxUses: 1,
+    },
+  });
+
+  revalidatePath(`/workspace/${workspaceId}`);
+  return { inviteToken };
+}
+
+export async function revokeInviteLinkAction(
+  formData: FormData,
+): Promise<WorkspaceMemberActionState> {
+  const callerId = await getCurrentUserId();
+  const workspaceId = String(formData.get("workspaceId") ?? "");
+  const inviteLinkId = String(formData.get("inviteLinkId") ?? "");
+
+  if (!workspaceId || !inviteLinkId) {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  try {
+    await requireManagerRole(callerId, workspaceId);
+  } catch {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  const link = await prisma.workspaceInviteLink.findUnique({
+    where: { id: inviteLinkId },
+    select: { workspaceId: true, revokedAt: true },
+  });
+
+  if (!link || link.workspaceId !== workspaceId) {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  if (!link.revokedAt) {
+    await prisma.workspaceInviteLink.update({
+      where: { id: inviteLinkId },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  revalidatePath(`/workspace/${workspaceId}`);
+  return {};
+}
+
+export async function updateWorkspaceNameAction(
+  formData: FormData,
+): Promise<WorkspaceSettingsActionState> {
+  const callerId = await getCurrentUserId();
+  const workspaceId = String(formData.get("workspaceId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!workspaceId) {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  if (name.length < 2 || name.length > 80) {
+    return {
+      error: "Le nom du workspace doit contenir entre 2 et 80 caractères.",
+    };
+  }
+
+  try {
+    await requireManagerRole(callerId, workspaceId);
+  } catch {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: { name },
+  });
+
+  revalidatePath(`/workspace/${workspaceId}`);
+  revalidatePath(`/workspace/${workspaceId}/settings`);
   return {};
 }

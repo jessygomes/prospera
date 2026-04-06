@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppNavbar } from "@/app/components/app-navbar";
+import { AppNavbar } from "@/components/shared/app-navbar";
 import { prisma } from "@/lib/prisma";
 import { signOutAction } from "@/app/dashboard/actions";
 import { ProjectsFilterBar } from "./projects-filter-bar";
@@ -208,7 +208,7 @@ export default async function ProjectsPage({
         backLabel={membership.workspace.name}
       />
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
+      <main className="mx-auto w-full max-w-400 flex-1 px-20 py-8">
         {/* En-tête */}
         <div className="mb-8">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-brand-2/70">

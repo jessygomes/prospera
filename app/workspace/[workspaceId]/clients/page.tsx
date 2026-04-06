@@ -2,11 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppNavbar } from "@/app/components/app-navbar";
+import { AppNavbar } from "@/components/shared/app-navbar";
 import { prisma } from "@/lib/prisma";
 import { signOutAction } from "@/app/dashboard/actions";
 import { ClientActionCreateInline } from "./client-action-create-inline";
-import { ClientActionStatusInline } from "./client-action-status-inline";
+import { ClientActionRowExpandable } from "./client-action-row-expandable";
+import { ProspectPipelineBoard } from "./prospect-pipeline-board";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,9 @@ type ClientStatus =
   | "INACTIVE";
 
 type ClientActionStatus = "TODO" | "DONE" | "CANCELED";
+type ClientPriority = "HIGH" | "MEDIUM" | "LOW";
+type ClientsLayout = "board" | "list";
+type ClientsScope = "ALL" | "MINE";
 type ActionQuickFilter =
   | "ALL"
   | "TODO"
@@ -29,6 +33,8 @@ type ActionQuickFilter =
   | "OVERDUE"
   | "TODAY"
   | "THIS_WEEK";
+type ClientHealthFilter = "ALL" | "WITHOUT_BUDGET" | "WITHOUT_PINNED_NOTE";
+type ActionSummaryFilter = "ALL" | "MISSING";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -62,18 +68,6 @@ const PRIORITY_CLASSES = {
 
 const PRIORITY_LABELS = { HIGH: "Urgent", MEDIUM: "Moyen", LOW: "Faible" };
 
-const ACTION_STATUS_LABELS: Record<ClientActionStatus, string> = {
-  TODO: "À faire",
-  DONE: "Fait",
-  CANCELED: "Annulé",
-};
-
-const ACTION_STATUS_CLASSES: Record<ClientActionStatus, string> = {
-  TODO: "bg-amber-500/10 text-amber-400 border-amber-500/25",
-  DONE: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
-  CANCELED: "bg-red-500/10 text-red-400 border-red-500/25",
-};
-
 const ACTION_QUICK_FILTER_LABELS: Record<ActionQuickFilter, string> = {
   ALL: "Toutes",
   TODO: "À faire",
@@ -94,6 +88,14 @@ const ALL_ACTION_QUICK_FILTERS: ActionQuickFilter[] = [
   "THIS_WEEK",
 ];
 
+const ALL_CLIENT_HEALTH_FILTERS: ClientHealthFilter[] = [
+  "ALL",
+  "WITHOUT_BUDGET",
+  "WITHOUT_PINNED_NOTE",
+];
+
+const ALL_ACTION_SUMMARY_FILTERS: ActionSummaryFilter[] = ["ALL", "MISSING"];
+
 const PAGE_SIZE = 9;
 
 const ALL_STATUSES = Object.keys(STATUS_LABELS) as ClientStatus[];
@@ -109,6 +111,16 @@ function isValidActionStatus(value: string): value is ClientActionStatus {
 
 function isValidActionQuickFilter(value: string): value is ActionQuickFilter {
   return ALL_ACTION_QUICK_FILTERS.includes(value as ActionQuickFilter);
+}
+
+function isValidClientHealthFilter(value: string): value is ClientHealthFilter {
+  return ALL_CLIENT_HEALTH_FILTERS.includes(value as ClientHealthFilter);
+}
+
+function isValidActionSummaryFilter(
+  value: string,
+): value is ActionSummaryFilter {
+  return ALL_ACTION_SUMMARY_FILTERS.includes(value as ActionSummaryFilter);
 }
 
 function formatDate(date: Date | null | undefined): string | null {
@@ -128,8 +140,12 @@ type PageProps = {
     status?: string;
     preview?: string;
     view?: string;
+    clientsLayout?: string;
+    clientsScope?: string;
     actionStatus?: string;
     actionQuickFilter?: string;
+    actionSummary?: string;
+    clientHealth?: string;
     page?: string;
   }>;
 };
@@ -140,8 +156,12 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
     status: rawStatus,
     preview: previewId,
     view: rawView,
+    clientsLayout: rawClientsLayout,
+    clientsScope: rawClientsScope,
     actionStatus: rawActionStatus,
     actionQuickFilter: rawActionQuickFilter,
+    actionSummary: rawActionSummary,
+    clientHealth: rawClientHealth,
     page: rawPage,
   } = await searchParams;
 
@@ -156,6 +176,10 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
   if (!membership) redirect("/dashboard");
 
   const currentView = rawView === "actions" ? "actions" : "clients";
+  const currentClientsLayout: ClientsLayout =
+    rawClientsLayout === "list" ? "list" : "board";
+  const currentClientsScope: ClientsScope =
+    rawClientsScope === "MINE" ? "MINE" : "ALL";
 
   const activeStatus: ClientStatus | null =
     rawStatus && isValidStatus(rawStatus) ? rawStatus : null;
@@ -170,17 +194,55 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
       ? rawActionQuickFilter
       : activeActionStatus
         ? activeActionStatus
-        : currentView === "actions"
-          ? "TODO"
-          : "ALL";
+        : "ALL";
+
+  const activeClientHealthFilter: ClientHealthFilter =
+    rawClientHealth && isValidClientHealthFilter(rawClientHealth)
+      ? rawClientHealth
+      : "ALL";
+
+  const activeActionSummaryFilter: ActionSummaryFilter =
+    rawActionSummary && isValidActionSummaryFilter(rawActionSummary)
+      ? rawActionSummary
+      : "ALL";
 
   const requestedPage = Number.parseInt(rawPage ?? "1", 10);
   const safeRequestedPage =
     Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
+  const mineClientIds =
+    currentView === "clients" && currentClientsScope === "MINE"
+      ? await prisma.clientAction.findMany({
+          where: {
+            workspaceId,
+            assignedToId: userId,
+            status: "TODO",
+          },
+          select: { clientId: true },
+          distinct: ["clientId"],
+        })
+      : [];
+
+  const mineClientIdValues = mineClientIds.map((entry) => entry.clientId);
+
   const clientsWhere = {
     workspaceId,
-    ...(activeStatus ? { status: activeStatus } : {}),
+    ...(currentClientsScope === "MINE"
+      ? { id: { in: mineClientIdValues } }
+      : {}),
+    ...(currentClientsLayout === "list" && activeStatus
+      ? { status: activeStatus }
+      : {}),
+    ...(activeClientHealthFilter === "WITHOUT_BUDGET"
+      ? { budgetEstimated: null }
+      : {}),
+    ...(activeClientHealthFilter === "WITHOUT_PINNED_NOTE"
+      ? {
+          clientNotes: {
+            none: { isPinned: true },
+          },
+        }
+      : {}),
   };
 
   const now = new Date();
@@ -202,6 +264,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
     workspaceId: string;
     status?: ClientActionStatus;
     dueDate?: { lt?: Date; gte?: Date };
+    OR?: Array<{ interactionSummary: null } | { interactionSummary: "" }>;
   } = {
     workspaceId,
   };
@@ -228,6 +291,10 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
     actionWhere.dueDate = { gte: startToday, lt: endThisWeek };
   }
 
+  if (activeActionSummaryFilter === "MISSING") {
+    actionWhere.OR = [{ interactionSummary: null }, { interactionSummary: "" }];
+  }
+
   const clientsFilteredCount =
     currentView === "clients"
       ? await prisma.client.count({ where: clientsWhere })
@@ -251,13 +318,44 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
 
   const clients =
     currentView === "clients"
-      ? await prisma.client.findMany({
-          where: clientsWhere,
-          orderBy: [{ nextFollowUpAt: "asc" }, { createdAt: "desc" }],
-          skip: (currentClientPage - 1) * PAGE_SIZE,
-          take: PAGE_SIZE,
+      ? currentClientsLayout === "list"
+        ? await prisma.client.findMany({
+            where: clientsWhere,
+            orderBy: [{ nextFollowUpAt: "asc" }, { createdAt: "desc" }],
+            skip: (currentClientPage - 1) * PAGE_SIZE,
+            take: PAGE_SIZE,
+          })
+        : await prisma.client.findMany({
+            where: {
+              workspaceId,
+              ...(currentClientsScope === "MINE"
+                ? { id: { in: mineClientIdValues } }
+                : {}),
+            },
+            orderBy: [{ nextFollowUpAt: "asc" }, { createdAt: "desc" }],
+            take: 200,
+          })
+      : [];
+
+  const todoActionCountsByClient =
+    currentView === "clients" && clients.length > 0
+      ? await prisma.clientAction.groupBy({
+          by: ["clientId"],
+          where: {
+            workspaceId,
+            status: "TODO",
+            clientId: { in: clients.map((client) => client.id) },
+          },
+          _count: { _all: true },
         })
       : [];
+
+  const todoCountByClientId = Object.fromEntries(
+    todoActionCountsByClient.map((entry) => [
+      entry.clientId,
+      entry._count._all,
+    ]),
+  ) as Record<string, number>;
 
   const previewClient =
     currentView === "clients" && previewId
@@ -299,7 +397,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
               select: { name: true, email: true },
             },
           },
-          orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+          orderBy: [{ createdAt: "desc" }],
           skip: (currentActionPage - 1) * PAGE_SIZE,
           take: PAGE_SIZE,
         })
@@ -335,6 +433,44 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
         })
       : [];
 
+  const actionAssigneeOptions = actionAssignees.map(({ user }) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  }));
+
+  const displayedActionClientIds =
+    currentView === "actions"
+      ? Array.from(new Set(clientActions.map((action) => action.client.id)))
+      : [];
+
+  const chainableActionsForVisibleClients =
+    currentView === "actions" && displayedActionClientIds.length > 0
+      ? await prisma.clientAction.findMany({
+          where: {
+            workspaceId,
+            clientId: { in: displayedActionClientIds },
+          },
+          select: {
+            id: true,
+            title: true,
+            clientId: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 500,
+        })
+      : [];
+
+  const chainableActionsByClientId = chainableActionsForVisibleClients.reduce<
+    Record<string, Array<{ id: string; title: string }>>
+  >((acc, entry) => {
+    if (!acc[entry.clientId]) {
+      acc[entry.clientId] = [];
+    }
+    acc[entry.clientId].push({ id: entry.id, title: entry.title });
+    return acc;
+  }, {});
+
   // Counts per status for filter tabs
   const statusCounts = await prisma.client.groupBy({
     by: ["status"],
@@ -356,25 +492,98 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
     0,
   );
 
+  const pipelineStatuses: ClientStatus[] = [
+    "PROSPECT",
+    "CONTACTED",
+    "QUALIFIED",
+    "PROPOSAL_SENT",
+    "NEGOTIATION",
+  ];
+  const activePipelineCount = pipelineStatuses.reduce(
+    (sum, status) => sum + (countByStatus[status] ?? 0),
+    0,
+  );
+
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+
+  const [
+    followUpTodayCount,
+    overdueFollowUpCount,
+    wonLast30Days,
+    lostLast30Days,
+  ] = await Promise.all([
+    prisma.client.count({
+      where: {
+        workspaceId,
+        status: { in: pipelineStatuses },
+        nextFollowUpAt: { gte: startToday, lt: endToday },
+      },
+    }),
+    prisma.client.count({
+      where: {
+        workspaceId,
+        status: { in: pipelineStatuses },
+        nextFollowUpAt: { lt: startToday },
+      },
+    }),
+    prisma.clientStatusHistory.count({
+      where: {
+        workspaceId,
+        toStatus: "WON",
+        changedAt: { gte: thirtyDaysAgo },
+      },
+    }),
+    prisma.clientStatusHistory.count({
+      where: {
+        workspaceId,
+        toStatus: "LOST",
+        changedAt: { gte: thirtyDaysAgo },
+      },
+    }),
+  ]);
+
+  const pipelineValueAgg = await prisma.client.aggregate({
+    where: {
+      workspaceId,
+      status: { in: pipelineStatuses },
+    },
+    _sum: { budgetEstimated: true },
+  });
+
+  const pipelineValue = pipelineValueAgg._sum.budgetEstimated ?? 0;
+
   const displayName =
     session.user?.name ?? session.user?.email ?? "Utilisateur";
 
   const closePreviewHref = activeStatus
-    ? `/workspace/${workspaceId}/clients?view=clients&status=${activeStatus}&page=${currentClientPage}`
-    : `/workspace/${workspaceId}/clients?view=clients&page=${currentClientPage}`;
+    ? `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&status=${activeStatus}&page=${currentClientPage}`
+    : `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&page=${currentClientPage}`;
 
   function previewHref(clientId: string) {
     if (activeStatus) {
-      return `/workspace/${workspaceId}/clients?view=clients&status=${activeStatus}&preview=${clientId}&page=${currentClientPage}`;
+      return `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&status=${activeStatus}&preview=${clientId}&page=${currentClientPage}`;
     }
-    return `/workspace/${workspaceId}/clients?view=clients&preview=${clientId}&page=${currentClientPage}`;
+    return `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&preview=${clientId}&page=${currentClientPage}`;
   }
 
   function clientPageHref(page: number) {
+    const layoutPart = `&clientsLayout=${currentClientsLayout}`;
+    const scopePart = `&clientsScope=${currentClientsScope}`;
     if (activeStatus) {
-      return `/workspace/${workspaceId}/clients?view=clients&status=${activeStatus}&page=${page}`;
+      return `/workspace/${workspaceId}/clients?view=clients${layoutPart}${scopePart}&status=${activeStatus}&page=${page}`;
     }
-    return `/workspace/${workspaceId}/clients?view=clients&page=${page}`;
+    return `/workspace/${workspaceId}/clients?view=clients${layoutPart}${scopePart}&page=${page}`;
+  }
+
+  function clientsLayoutHref(layout: ClientsLayout) {
+    const statusPart = activeStatus ? `&status=${activeStatus}` : "";
+    return `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${layout}&clientsScope=${currentClientsScope}${statusPart}&page=1`;
+  }
+
+  function clientsScopeHref(scope: ClientsScope) {
+    const statusPart = activeStatus ? `&status=${activeStatus}` : "";
+    return `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${scope}${statusPart}&page=1`;
   }
 
   function actionPageHref(page: number) {
@@ -390,6 +599,23 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
     return `/workspace/${workspaceId}/clients?view=actions${filterPart}&page=1`;
   }
 
+  const activeAutoFilterBadges: string[] = [];
+  if (currentView === "clients" && activeClientHealthFilter !== "ALL") {
+    activeAutoFilterBadges.push(
+      activeClientHealthFilter === "WITHOUT_BUDGET"
+        ? "Filtre auto: clients sans budget"
+        : "Filtre auto: clients sans note épinglée",
+    );
+  }
+  if (currentView === "actions" && activeActionSummaryFilter === "MISSING") {
+    activeAutoFilterBadges.push("Filtre auto: actions faites sans résumé");
+  }
+
+  const clearAutoFiltersHref =
+    currentView === "clients"
+      ? `/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}${activeStatus ? `&status=${activeStatus}` : ""}&page=1`
+      : `/workspace/${workspaceId}/clients?view=actions${activeActionQuickFilter !== "ALL" ? `&actionQuickFilter=${activeActionQuickFilter}` : ""}&page=1`;
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppNavbar
@@ -400,7 +626,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
         backLabel={membership.workspace.name}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+      <main className="mx-auto w-full max-w-375 flex-1 px-20 py-10">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
@@ -416,7 +642,46 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                 : `${totalActionCount} action${totalActionCount !== 1 ? "s" : ""} commerciales`}
             </p>
           </div>
-          {currentView === "clients" ? (
+        </div>
+
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="inline-flex rounded-xl border border-border/60 bg-surface-2/55 p-1 shadow-[0_8px_24px_-20px_rgba(0,0,0,0.35)]">
+            <Link
+              href={`/workspace/${workspaceId}/clients?view=clients`}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold tracking-wide transition ${
+                currentView === "clients"
+                  ? "bg-brand-1 text-white shadow-[0_8px_20px_-12px_rgba(109,15,242,0.7)]"
+                  : "text-foreground/55 hover:bg-surface hover:text-foreground"
+              }`}
+            >
+              Clients
+              <span className="ml-1.5 rounded-full bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold text-current/85">
+                {totalCount}
+              </span>
+            </Link>
+            <Link
+              href={`/workspace/${workspaceId}/clients?view=actions&actionQuickFilter=TODO&page=1`}
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold tracking-wide transition ${
+                currentView === "actions"
+                  ? "bg-brand-1 text-white shadow-[0_8px_20px_-12px_rgba(109,15,242,0.7)]"
+                  : "text-foreground/55 hover:bg-surface hover:text-foreground"
+              }`}
+            >
+              Actions
+              <span className="ml-1.5 rounded-full bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold text-current/85">
+                {totalActionCount}
+              </span>
+            </Link>
+          </div>
+
+          {currentView === "actions" && actionClients.length > 0 ? (
+            <ClientActionCreateInline
+              compact
+              workspaceId={workspaceId}
+              clients={actionClients}
+              assignees={actionAssigneeOptions}
+            />
+          ) : currentView === "clients" ? (
             <Link
               href={`/workspace/${workspaceId}/clients/new`}
               className="shrink-0 rounded-xl bg-brand-1 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4 hover:shadow-[0_4px_24px_-4px_rgba(109,15,242,0.55)]"
@@ -426,81 +691,188 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
           ) : null}
         </div>
 
-        <div className="mb-6 flex gap-2 border-b border-border/50 pb-3">
-          <Link
-            href={`/workspace/${workspaceId}/clients?view=clients`}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-              currentView === "clients"
-                ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
-                : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
-            }`}
-          >
-            Clients
-            <span className="ml-1.5 opacity-60">{totalCount}</span>
-          </Link>
-          <Link
-            href={`/workspace/${workspaceId}/clients?view=actions&actionQuickFilter=TODO&page=1`}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-              currentView === "actions"
-                ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
-                : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
-            }`}
-          >
-            Actions
-            <span className="ml-1.5 opacity-60">{totalActionCount}</span>
-          </Link>
-        </div>
+        {activeAutoFilterBadges.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {activeAutoFilterBadges.map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center rounded-full border border-brand-1/35 bg-brand-1/10 px-2.5 py-1 text-[11px] font-semibold text-brand-2"
+              >
+                {label}
+              </span>
+            ))}
+            <Link
+              href={clearAutoFiltersHref}
+              className="rounded-md border border-border/70 bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground/60 transition hover:text-foreground"
+            >
+              Retirer filtres auto
+            </Link>
+          </div>
+        )}
+
+        {currentView === "clients" && (
+          <div className="mb-5 grid grid-cols-2 gap-2.5 lg:grid-cols-5">
+            <div className="rounded-xl border border-border/60 bg-surface px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                Prospects actifs
+              </p>
+              <p className="mt-1 text-xl font-bold text-foreground">
+                {activePipelineCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-surface px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                Relances aujourd&apos;hui
+              </p>
+              <p className="mt-1 text-xl font-bold text-amber-300">
+                {followUpTodayCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-surface px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                Relances en retard
+              </p>
+              <p className="mt-1 text-xl font-bold text-red-400">
+                {overdueFollowUpCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-surface px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                Gagnés (30j)
+              </p>
+              <p className="mt-1 text-xl font-bold text-emerald-300">
+                {wonLast30Days}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/60 bg-surface px-3 py-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground/45">
+                Valeur pipeline
+              </p>
+              <p className="mt-1 text-xl font-bold text-foreground">
+                {pipelineValue.toLocaleString("fr-FR")} €
+              </p>
+              <p className="mt-0.5 text-[11px] text-foreground/45">
+                Perdus (30j): {lostLast30Days}
+              </p>
+            </div>
+          </div>
+        )}
 
         {currentView === "clients" ? (
-          <div className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
-            <Link
-              href={`/workspace/${workspaceId}/clients?view=clients&page=1`}
-              className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                !activeStatus
-                  ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
-                  : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
-              }`}
-            >
-              Tous
-              <span className="ml-1.5 opacity-60">{totalCount}</span>
-            </Link>
-            {ALL_STATUSES.map((s) => {
-              const count = countByStatus[s] ?? 0;
-              const isActive = activeStatus === s;
-              return (
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-2">
                 <Link
-                  key={s}
-                  href={`/workspace/${workspaceId}/clients?view=clients&status=${s}&page=1`}
-                  className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                    isActive
+                  href={clientsLayoutHref("board")}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                    currentClientsLayout === "board"
                       ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
-                      : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
+                      : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
                   }`}
                 >
-                  {STATUS_LABELS[s]}
-                  <span className="ml-1.5 opacity-60">{count}</span>
+                  Pipeline prospects
                 </Link>
-              );
-            })}
+                <Link
+                  href={clientsLayoutHref("list")}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                    currentClientsLayout === "list"
+                      ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                      : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
+                  }`}
+                >
+                  Liste
+                </Link>
+              </div>
+
+              {currentClientsLayout === "list" && (
+                <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-surface/35 px-2.5 py-2">
+                  <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-0.5">
+                    <span className="shrink-0 px-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/40">
+                      Portée
+                    </span>
+                    <Link
+                      href={clientsScopeHref("ALL")}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                        currentClientsScope === "ALL"
+                          ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                          : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
+                      }`}
+                    >
+                      Tous
+                    </Link>
+                    <Link
+                      href={clientsScopeHref("MINE")}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                        currentClientsScope === "MINE"
+                          ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                          : "border-border/60 bg-surface text-foreground/50 hover:text-foreground"
+                      }`}
+                    >
+                      Mes prospects (actions à faire)
+                    </Link>
+
+                    <span className="mx-1 h-4 w-px shrink-0 bg-border/60" />
+
+                    <span className="shrink-0 px-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/40">
+                      Statut
+                    </span>
+                    <Link
+                      href={`/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&page=1`}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                        !activeStatus
+                          ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                          : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
+                      }`}
+                    >
+                      Tous
+                      <span className="ml-1 opacity-60">{totalCount}</span>
+                    </Link>
+                    {ALL_STATUSES.map((s) => {
+                      const count = countByStatus[s] ?? 0;
+                      const isActive = activeStatus === s;
+                      return (
+                        <Link
+                          key={s}
+                          href={`/workspace/${workspaceId}/clients?view=clients&clientsLayout=${currentClientsLayout}&clientsScope=${currentClientsScope}&status=${s}&page=1`}
+                          className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                            isActive
+                              ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                              : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
+                          }`}
+                        >
+                          {STATUS_LABELS[s]}
+                          <span className="ml-1 opacity-60">{count}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="mb-6 flex gap-1.5 overflow-x-auto pb-1">
-            {ALL_ACTION_QUICK_FILTERS.map((s) => {
-              const isActive = activeActionQuickFilter === s;
-              return (
-                <Link
-                  key={s}
-                  href={actionQuickFilterHref(s)}
-                  className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                    isActive
-                      ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
-                      : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
-                  }`}
-                >
-                  {ACTION_QUICK_FILTER_LABELS[s]}
-                </Link>
-              );
-            })}
+          <div className="mb-6 rounded-xl border border-border/60 bg-surface/35 px-2.5 py-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-0.5">
+              <span className="shrink-0 px-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/40">
+                Filtre
+              </span>
+              {ALL_ACTION_QUICK_FILTERS.map((s) => {
+                const isActive = activeActionQuickFilter === s;
+                return (
+                  <Link
+                    key={s}
+                    href={actionQuickFilterHref(s)}
+                    className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                      isActive
+                        ? "border-brand-1/30 bg-brand-1/10 text-brand-2"
+                        : "border-border/60 bg-surface text-foreground/50 hover:border-border hover:text-foreground"
+                    }`}
+                  >
+                    {ACTION_QUICK_FILTER_LABELS[s]}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -520,6 +892,23 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                 Créer le premier client
               </Link>
             </div>
+          ) : currentClientsLayout === "board" ? (
+            <ProspectPipelineBoard
+              workspaceId={workspaceId}
+              activeStatus={activeStatus}
+              clients={clients.map((client) => ({
+                id: client.id,
+                fullName: client.fullName,
+                company: client.company,
+                status: client.status,
+                priority: client.priority as ClientPriority,
+                budgetEstimated: client.budgetEstimated,
+                nextFollowUpAtIso: client.nextFollowUpAt
+                  ? client.nextFollowUpAt.toISOString()
+                  : null,
+                todoActionsCount: todoCountByClientId[client.id] ?? 0,
+              }))}
+            />
           ) : (
             <div className="flex flex-col gap-2">
               {clients.map((client) => {
@@ -607,54 +996,45 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
             </div>
           ))}
 
-        {currentView === "clients" && clientsFilteredCount > 0 && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
-            <p className="text-xs text-foreground/45">
-              Page {currentClientPage} sur {totalClientPages} ·{" "}
-              {clientsFilteredCount} client
-              {clientsFilteredCount > 1 ? "s" : ""}
-            </p>
-            <div className="flex items-center gap-2">
-              <Link
-                href={clientPageHref(Math.max(1, currentClientPage - 1))}
-                className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
-                  currentClientPage === 1
-                    ? "pointer-events-none opacity-40"
-                    : ""
-                }`}
-              >
-                Précédent
-              </Link>
-              <Link
-                href={clientPageHref(
-                  Math.min(totalClientPages, currentClientPage + 1),
-                )}
-                className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
-                  currentClientPage === totalClientPages
-                    ? "pointer-events-none opacity-40"
-                    : ""
-                }`}
-              >
-                Suivant
-              </Link>
+        {currentView === "clients" &&
+          currentClientsLayout === "list" &&
+          clientsFilteredCount > 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
+              <p className="text-xs text-foreground/45">
+                Page {currentClientPage} sur {totalClientPages} ·{" "}
+                {clientsFilteredCount} client
+                {clientsFilteredCount > 1 ? "s" : ""}
+              </p>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={clientPageHref(Math.max(1, currentClientPage - 1))}
+                  className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
+                    currentClientPage === 1
+                      ? "pointer-events-none opacity-40"
+                      : ""
+                  }`}
+                >
+                  Précédent
+                </Link>
+                <Link
+                  href={clientPageHref(
+                    Math.min(totalClientPages, currentClientPage + 1),
+                  )}
+                  className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
+                    currentClientPage === totalClientPages
+                      ? "pointer-events-none opacity-40"
+                      : ""
+                  }`}
+                >
+                  Suivant
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {currentView === "actions" &&
           (clientActions.length === 0 ? (
             <>
-              {actionClients.length > 0 && (
-                <ClientActionCreateInline
-                  workspaceId={workspaceId}
-                  clients={actionClients}
-                  assignees={actionAssignees.map(({ user }) => ({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                  }))}
-                />
-              )}
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-surface/40 py-20 text-center">
                 <p className="text-2xl">✅</p>
                 <p className="mt-3 text-sm font-medium text-foreground/60">
@@ -666,137 +1046,60 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
             </>
           ) : (
             <>
-              {actionClients.length > 0 && (
-                <ClientActionCreateInline
-                  workspaceId={workspaceId}
-                  clients={actionClients}
-                  assignees={actionAssignees.map(({ user }) => ({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                  }))}
-                />
-              )}
-              <div className="flex flex-col gap-2">
-                {clientActions.map((action) => {
-                  const isOverdue =
-                    action.status === "TODO" &&
-                    action.dueDate !== null &&
-                    action.dueDate < new Date();
-
-                  return (
-                    <div
+              <>
+                <div className="flex flex-col gap-2">
+                  {clientActions.map((action) => (
+                    <ClientActionRowExpandable
                       key={action.id}
-                      className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-surface p-4"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">
-                            {action.title}
-                          </p>
-                          <span
-                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${ACTION_STATUS_CLASSES[action.status]}`}
-                          >
-                            {ACTION_STATUS_LABELS[action.status]}
-                          </span>
-                        </div>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground/45">
-                          <span>
-                            Client:{" "}
-                            <Link
-                              href={`/workspace/${workspaceId}/clients/${action.client.id}`}
-                              className="font-semibold text-brand-2 hover:underline"
-                            >
-                              {action.client.fullName}
-                            </Link>
-                          </span>
-                          <span>Type: {action.type}</span>
-                          <span>
-                            Assigné:{" "}
-                            {action.assignedTo?.name ??
-                              action.assignedTo?.email ??
-                              "—"}
-                          </span>
-                          <span>
-                            Créé par:{" "}
-                            {action.createdBy?.name ??
-                              action.createdBy?.email ??
-                              "—"}
-                          </span>
-                        </div>
-
-                        {action.description && (
-                          <p className="mt-1 line-clamp-2 text-xs text-foreground/55">
-                            {action.description}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="text-right text-xs">
-                        <p
-                          className={
-                            isOverdue
-                              ? "font-semibold text-red-400"
-                              : "text-foreground/45"
-                          }
-                        >
-                          {action.dueDate
-                            ? `Échéance ${formatDate(action.dueDate)}`
-                            : "Sans échéance"}
-                        </p>
-                        <div className="mt-1 flex justify-end">
-                          <ClientActionStatusInline
-                            workspaceId={workspaceId}
-                            taskId={action.id}
-                            value={action.status}
-                          />
-                        </div>
-                        <Link
-                          href={`/workspace/${workspaceId}/clients/${action.client.id}`}
-                          className="mt-2 inline-block rounded-lg bg-brand-1/10 px-2.5 py-1 font-semibold text-brand-2 transition hover:bg-brand-1/20"
-                        >
-                          Ouvrir client
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {actionsFilteredCount > 0 && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
-                  <p className="text-xs text-foreground/45">
-                    Page {currentActionPage} sur {totalActionPages} ·{" "}
-                    {actionsFilteredCount} action
-                    {actionsFilteredCount > 1 ? "s" : ""}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={actionPageHref(Math.max(1, currentActionPage - 1))}
-                      className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
-                        currentActionPage === 1
-                          ? "pointer-events-none opacity-40"
-                          : ""
-                      }`}
-                    >
-                      Précédent
-                    </Link>
-                    <Link
-                      href={actionPageHref(
-                        Math.min(totalActionPages, currentActionPage + 1),
-                      )}
-                      className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
-                        currentActionPage === totalActionPages
-                          ? "pointer-events-none opacity-40"
-                          : ""
-                      }`}
-                    >
-                      Suivant
-                    </Link>
-                  </div>
+                      workspaceId={workspaceId}
+                      action={{
+                        ...action,
+                        clientId: action.client.id,
+                      }}
+                      assignees={actionAssigneeOptions}
+                      chainableActions={
+                        chainableActionsByClientId[action.client.id] ?? []
+                      }
+                    />
+                  ))}
                 </div>
-              )}
+
+                {actionsFilteredCount > 0 && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3">
+                    <p className="text-xs text-foreground/45">
+                      Page {currentActionPage} sur {totalActionPages} ·{" "}
+                      {actionsFilteredCount} action
+                      {actionsFilteredCount > 1 ? "s" : ""}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={actionPageHref(
+                          Math.max(1, currentActionPage - 1),
+                        )}
+                        className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
+                          currentActionPage === 1
+                            ? "pointer-events-none opacity-40"
+                            : ""
+                        }`}
+                      >
+                        Précédent
+                      </Link>
+                      <Link
+                        href={actionPageHref(
+                          Math.min(totalActionPages, currentActionPage + 1),
+                        )}
+                        className={`rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground ${
+                          currentActionPage === totalActionPages
+                            ? "pointer-events-none opacity-40"
+                            : ""
+                        }`}
+                      >
+                        Suivant
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </>
             </>
           ))}
 

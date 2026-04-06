@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppNavbar } from "@/app/components/app-navbar";
+import { AppNavbar } from "@/components/shared/app-navbar";
 import { signOutAction } from "@/app/dashboard/actions";
 import { prisma } from "@/lib/prisma";
 import { ProjectDetailForm } from "./project-detail-form";
@@ -125,7 +125,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         backLabel={project.client.fullName}
       />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-20 py-8">
         {/* Header */}
         <div className="mb-6 rounded-2xl border border-border/60 bg-surface p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">

@@ -11,6 +11,9 @@ export type SignInState = {
 };
 
 export async function signInAction(formData: FormData): Promise<SignInState> {
+  const callbackUrlRaw = String(formData.get("callbackUrl") ?? "").trim();
+  const callbackUrl = callbackUrlRaw.startsWith("/") ? callbackUrlRaw : "/";
+
   const parsed = signInSchema.safeParse({
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
@@ -29,7 +32,7 @@ export async function signInAction(formData: FormData): Promise<SignInState> {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/",
+      redirectTo: callbackUrl,
     });
     return {};
   } catch (error) {

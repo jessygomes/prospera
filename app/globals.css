@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f6ff;
-  --foreground: #1c1530;
+  --background: #f4f6fb;
+  --foreground: #1b2338;
 
-  --brand-1: #6d0ff2;
-  --brand-2: #9c5ef2;
-  --brand-3: #c4a2f2;
-  --brand-4: #5005f2;
-  --brand-5: #f2f2f2;
-  --noir-1: #161616;
-  --noir-2: #0f0f0f;
+  --brand-1: #5f33eb;
+  --brand-2: #7c5af0;
+  --brand-3: #b9a5f6;
+  --brand-4: #4520c8;
+  --brand-5: #e9edfa;
+  --noir-1: #11162a;
+  --noir-2: #0b1020;
 
   --surface: #ffffff;
-  --surface-2: #f1ebff;
-  --border: #d8c6ef;
+  --surface-2: #edf1fb;
+  --border: #c5d0e6;
 }
 
 @theme inline {
@@ -34,34 +34,54 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #130a24;
-    --foreground: #f5eeff;
-    --surface: #1d1136;
-    --surface-2: #251546;
-    --border: #5b3c8a;
+    --background: #0c1222;
+    --foreground: #eef3ff;
+    --surface: #151d33;
+    --surface-2: #1c2842;
+    --border: #31415f;
+
+    --brand-1: #7f67f8;
+    --brand-2: #9b87fa;
+    --brand-3: #c0b5fb;
+    --brand-4: #6650d9;
+    --brand-5: #2a3553;
   }
 }
 
 body {
-  /* background:
-    radial-gradient(
-      circle at 15% 10%,
-      color-mix(in oklab, var(--brand-1) 20%, transparent) 0,
-      transparent 38%
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--background) 92%, var(--noir-1)) 0%,
+      var(--background) 55%,
+      color-mix(in oklab, var(--background) 90%, var(--brand-4)) 100%
     ),
-    radial-gradient(
-      circle at 85% 20%,
-      color-mix(in oklab, var(--brand-5) 22%, transparent) 0,
-      transparent 40%
-    ), linear-gradient(
-    135deg,
-    color-mix(in oklab, var(--brand-4) 8%, var(--background)) 0%,
-    var(--background) 55%,
-    color-mix(in oklab, var(--brand-3) 10%, var(--background)) 100%
-  ); */
-  background: linear-gradient(135deg, var(--noir-1) 0%, var(--noir-2) 100%);
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--brand-2) 10%, transparent) 0%,
+      transparent 28%,
+      transparent 72%,
+      color-mix(in oklab, var(--brand-4) 8%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--brand-3) 7%, transparent) 0%,
+      transparent 38%,
+      transparent 62%,
+      color-mix(in oklab, var(--brand-1) 6%, transparent) 100%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%;
   color: var(--foreground);
   font-family: var(--font-quicksand), "Segoe UI", sans-serif;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand-2) 30%, transparent);
 }
 
 h1,
@@ -72,4 +92,14 @@ h5,
 h6 {
   font-family: var(--font-urbanist), "Segoe UI", sans-serif;
   letter-spacing: 0.01em;
+}
+
+@media (min-width: 1024px) {
+  .client-info-layout {
+    grid-template-columns: minmax(0, 1.65fr) 340px;
+  }
+
+  .client-info-layout:has(.client-ai-advice-panel--expanded) {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
 }

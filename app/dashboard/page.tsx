@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-import { AppNavbar } from "@/app/components/app-navbar";
+import { AppNavbar } from "@/components/shared/app-navbar";
 import { CreateWorkspaceInlineForm } from "./create-workspace-inline-form";
 import { JoinWorkspaceInlineForm } from "./join-workspace-inline-form";
 import { signOutAction } from "./actions";
@@ -27,7 +27,8 @@ export default async function DashboardPage() {
     redirect("/onboarding/workspace");
   }
 
-  const displayName = session.user?.name ?? session.user?.email ?? "Utilisateur";
+  const displayName =
+    session.user?.name ?? session.user?.email ?? "Utilisateur";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -38,8 +39,7 @@ export default async function DashboardPage() {
       />
 
       {/* ── Main content ─────────────────────────────────────────── */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
-
+      <main className="mx-auto w-full max-w-375 flex-1 px-20 py-10">
         {/* Page heading */}
         <div className="mb-10">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
@@ -56,8 +56,12 @@ export default async function DashboardPage() {
         {/* Stats row */}
         <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           <div className="rounded-xl border border-border/60 bg-surface p-4">
-            <p className="text-xs text-foreground/40 uppercase tracking-wider font-medium">Workspaces</p>
-            <p className="mt-1 text-3xl font-bold text-foreground">{memberships.length}</p>
+            <p className="text-xs text-foreground/40 uppercase tracking-wider font-medium">
+              Workspaces
+            </p>
+            <p className="mt-1 text-3xl font-bold text-foreground">
+              {memberships.length}
+            </p>
           </div>
           <div className="col-span-2 rounded-xl border border-border/60 bg-surface p-4 sm:col-span-2 lg:col-span-3">
             <div className="grid gap-4 lg:grid-cols-2">

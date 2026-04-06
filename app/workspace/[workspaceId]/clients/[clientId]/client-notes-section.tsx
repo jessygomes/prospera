@@ -3,7 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { createClientNoteAction, deleteClientNoteAction } from "../actions";
+import {
+  createClientNoteAction,
+  deleteClientNoteAction,
+  updateClientNotePinAction,
+} from "../actions";
 
 type ClientNote = {
   id: string;
@@ -77,6 +81,25 @@ export function ClientNotesSection({ workspaceId, clientId, notes }: Props) {
       }
 
       setConfirmDeleteId(null);
+      router.refresh();
+    });
+  }
+
+  function toggleNotePin(noteId: string, nextPinned: boolean) {
+    setError(null);
+
+    startTransition(async () => {
+      const result = await updateClientNotePinAction(
+        workspaceId,
+        clientId,
+        noteId,
+        nextPinned,
+      );
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+
       router.refresh();
     });
   }
@@ -159,6 +182,14 @@ export function ClientNotesSection({ workspaceId, clientId, notes }: Props) {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
+                        onClick={() => toggleNotePin(note.id, !note.isPinned)}
+                        disabled={isPending}
+                        className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-400 transition hover:bg-amber-500/20 disabled:opacity-50"
+                      >
+                        {note.isPinned ? "Désépingler" : "Épingler"}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => deleteNote(note.id)}
                         disabled={isPending}
                         className="rounded-md border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
@@ -174,13 +205,23 @@ export function ClientNotesSection({ workspaceId, clientId, notes }: Props) {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteId(note.id)}
-                      className="rounded-md border border-red-500/20 bg-red-500/5 px-2.5 py-1 text-[11px] font-semibold text-red-400/70 transition hover:border-red-500/40 hover:text-red-400"
-                    >
-                      Supprimer
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleNotePin(note.id, !note.isPinned)}
+                        disabled={isPending}
+                        className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-400 transition hover:bg-amber-500/20 disabled:opacity-50"
+                      >
+                        {note.isPinned ? "Désépingler" : "Épingler"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(note.id)}
+                        className="rounded-md border border-red-500/20 bg-red-500/5 px-2.5 py-1 text-[11px] font-semibold text-red-400/70 transition hover:border-red-500/40 hover:text-red-400"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
                   )}
                 </div>
 
