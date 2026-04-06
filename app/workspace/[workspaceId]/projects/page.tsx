@@ -208,7 +208,7 @@ export default async function ProjectsPage({
         backLabel={membership.workspace.name}
       />
 
-      <main className="mx-auto w-full max-w-400 flex-1 px-20 py-8">
+      <main className="mx-auto w-full max-w-400 flex-1 px-4 py-8 sm:px-6 lg:px-20">
         {/* En-tête */}
         <div className="mb-8">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-brand-2/70">
@@ -261,7 +261,7 @@ export default async function ProjectsPage({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => {
               const isOverdue =
                 project.deadline &&
@@ -276,10 +276,10 @@ export default async function ProjectsPage({
               return (
                 <div
                   key={project.id}
-                  className="flex flex-col rounded-2xl border border-border/60 bg-surface p-4 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.1)] transition hover:border-brand-1/20"
+                  className="flex flex-col rounded-2xl border border-border/60 bg-surface p-3 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.1)] transition hover:border-brand-1/20 sm:p-4"
                 >
                   {/* Header carte */}
-                  <div className="mb-3 flex items-start justify-between gap-2">
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-heading text-sm font-bold text-foreground">
                         {project.name}
@@ -295,7 +295,7 @@ export default async function ProjectsPage({
                       </Link>
                     </div>
                     <span
-                      className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_CLASSES[project.status]}`}
+                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_CLASSES[project.status]}`}
                     >
                       {STATUS_LABELS[project.status]}
                     </span>
@@ -380,10 +380,10 @@ export default async function ProjectsPage({
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Link
                       href={`/workspace/${workspaceId}/clients/${project.client.id}/projects/${project.id}`}
-                      className="flex-1 rounded-lg border border-border/70 bg-surface-2/40 py-1.5 text-center text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground"
+                      className="w-full rounded-lg border border-border/70 bg-surface-2/40 px-3 py-1.5 text-center text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground sm:flex-1"
                     >
                       Voir le projet →
                     </Link>
@@ -392,7 +392,7 @@ export default async function ProjectsPage({
                         href={project.websiteUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg border border-border/70 bg-surface-2/40 px-2.5 py-1.5 text-[11px] font-semibold text-foreground/50 transition hover:border-brand-1/30 hover:text-brand-2"
+                        className="w-full rounded-lg border border-border/70 bg-surface-2/40 px-3 py-1.5 text-center text-[11px] font-semibold text-foreground/50 transition hover:border-brand-1/30 hover:text-brand-2 sm:w-auto"
                       >
                         Site ↗
                       </a>

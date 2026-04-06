@@ -39,7 +39,7 @@ export default async function DashboardPage() {
       />
 
       {/* ── Main content ─────────────────────────────────────────── */}
-      <main className="mx-auto w-full max-w-375 flex-1 px-20 py-10">
+      <main className="mx-auto w-full max-w-375 flex-1 px-4 py-10 sm:px-6 lg:px-20">
         {/* Page heading */}
         <div className="mb-10">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">

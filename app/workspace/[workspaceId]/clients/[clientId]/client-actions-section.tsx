@@ -859,23 +859,23 @@ export function ClientActionsSection({
 
   return (
     <section className="">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-2xl font-bold text-foreground">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-heading text-xl font-bold text-foreground sm:text-2xl">
             Actions commerciales
           </h2>
-          <p className="text-sm text-foreground/45">
+          <p className="text-xs text-foreground/45 sm:text-sm">
             To-do, suivi, assignation et échéances.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-foreground/50">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          <span className="rounded-full border border-border/60 bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-foreground/50 sm:px-2.5 sm:text-xs">
             {tasks.length} action{tasks.length > 1 ? "s" : ""}
           </span>
           <button
             type="button"
             onClick={() => setIsCreateOpen((value) => !value)}
-            className="cursor-pointer rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-4"
+            className="cursor-pointer rounded-lg bg-brand-1 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-brand-4 sm:text-xs"
           >
             {isCreateOpen ? "Replier" : "+ Nouvelle action"}
           </button>

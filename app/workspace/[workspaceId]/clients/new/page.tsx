@@ -36,7 +36,7 @@ export default async function NewClientPage({ params }: PageProps) {
         backLabel="Clients"
       />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-20 py-10">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-20">
         <div className="mb-10">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
             Nouveau client

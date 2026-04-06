@@ -214,10 +214,10 @@ export function ClientActionRowExpandable({
     status === "DONE" && !interactionSummary.trim();
 
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="rounded-xl border border-border/60 bg-surface p-3 sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <p className="truncate text-sm font-semibold text-foreground">
               {title}
             </p>
@@ -228,7 +228,7 @@ export function ClientActionRowExpandable({
             </span>
           </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground/45">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-foreground/45 sm:gap-x-3 sm:text-xs">
             <span>
               Client:{" "}
               <Link
@@ -261,14 +261,14 @@ export function ClientActionRowExpandable({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
           <button
             type="button"
             onClick={() => {
               setIsExpanded(true);
               setIsEditing((prev) => !prev);
             }}
-            className="rounded-lg border border-border/70 bg-surface-2 px-2.5 py-1 text-xs font-semibold text-foreground/60 transition hover:text-foreground"
+            className="rounded-lg border border-border/70 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-foreground/60 transition hover:text-foreground sm:py-1 sm:text-xs"
           >
             {isEditing ? "Fermer édition" : "Modifier"}
           </button>
@@ -285,7 +285,7 @@ export function ClientActionRowExpandable({
               setIsEditing(false);
             }}
             aria-label={isExpanded ? "Replier l'action" : "Déplier l'action"}
-            className="rounded-lg border border-border/70 bg-surface-2 px-2.5 py-1 text-xs font-semibold text-foreground/60 transition hover:text-foreground"
+            className="rounded-lg border border-border/70 bg-surface-2 px-2.5 py-1.5 text-[11px] font-semibold text-foreground/60 transition hover:text-foreground sm:py-1 sm:text-xs"
           >
             <span aria-hidden>{isExpanded ? "▴" : "▾"}</span>
           </button>
@@ -478,7 +478,7 @@ export function ClientActionRowExpandable({
             </p>
           )}
 
-          <div className="md:col-span-4 mt-1 flex items-center gap-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2 md:col-span-4">
             <button
               type="button"
               onClick={save}

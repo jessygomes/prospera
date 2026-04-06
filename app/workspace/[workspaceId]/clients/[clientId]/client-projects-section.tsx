@@ -359,8 +359,8 @@ function ProjectRow({
 
   return (
     <div className="rounded-lg border border-border/60 bg-surface-2/20 px-3 py-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
           <p className="truncate text-sm font-semibold text-foreground">
             {project.name}
           </p>
@@ -377,10 +377,10 @@ function ProjectRow({
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:shrink-0 sm:items-center">
           <Link
             href={`/workspace/${workspaceId}/clients/${clientId}/projects/${project.id}`}
-            className="rounded-md border border-border/70 bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground"
+            className="rounded-md border border-border/70 bg-surface px-2.5 py-1.5 text-center text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground sm:py-1"
           >
             Détails →
           </Link>
@@ -390,7 +390,7 @@ function ProjectRow({
               setIsEditing(true);
               setIsConfirmDelete(false);
             }}
-            className="rounded-md border border-border/70 bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground"
+            className="rounded-md border border-border/70 bg-surface px-2.5 py-1.5 text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-foreground sm:py-1"
           >
             Modifier
           </button>
@@ -400,7 +400,7 @@ function ProjectRow({
                 type="button"
                 onClick={confirmDelete}
                 disabled={isPending}
-                className="rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
+                className="rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50 sm:py-1"
               >
                 {isPending ? "..." : "Confirmer"}
               </button>
@@ -408,7 +408,7 @@ function ProjectRow({
                 type="button"
                 onClick={() => setIsConfirmDelete(false)}
                 disabled={isPending}
-                className="rounded-md border border-border/70 bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground/60 transition hover:text-foreground disabled:opacity-50"
+                className="rounded-md border border-border/70 bg-surface px-2.5 py-1.5 text-[11px] font-semibold text-foreground/60 transition hover:text-foreground disabled:opacity-50 sm:py-1"
               >
                 Annuler
               </button>
@@ -417,7 +417,7 @@ function ProjectRow({
             <button
               type="button"
               onClick={() => setIsConfirmDelete(true)}
-              className="rounded-md border border-border/70 bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground/50 transition hover:border-red-500/30 hover:text-red-400"
+              className="rounded-md border border-border/70 bg-surface px-2.5 py-1.5 text-[11px] font-semibold text-foreground/50 transition hover:border-red-500/30 hover:text-red-400 sm:py-1"
             >
               Supprimer
             </button>
@@ -526,8 +526,8 @@ export function ClientProjectsSection({
   }
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <section className="rounded-2xl border border-border/60 bg-surface p-4 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)] sm:p-5">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <div>
           <h2 className="font-heading text-2xl font-bold text-foreground">
             Projets du client
@@ -536,7 +536,7 @@ export function ClientProjectsSection({
             Crée et suis les projets liés à ce client.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-border/60 bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-foreground/50">
             {projects.length} projet{projects.length > 1 ? "s" : ""}
           </span>

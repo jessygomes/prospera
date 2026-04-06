@@ -88,7 +88,7 @@ export default async function WorkspaceSettingsPage({ params }: PageProps) {
         backLabel="Workspace"
       />
 
-      <main className="mx-auto w-full max-w-375 flex-1 px-20 py-10">
+      <main className="mx-auto w-full max-w-375 flex-1 px-4 py-10 sm:px-6 lg:px-20">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-brand-2/70">

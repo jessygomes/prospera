@@ -25,7 +25,7 @@ export default async function WorkspaceOnboardingPage() {
         onSignOut={signOutAction}
       />
 
-      <main className="flex flex-1 flex-col items-center justify-center px-20 py-12">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-20">
         <div className="mb-10 text-center">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-brand-2/70">
             Onboarding

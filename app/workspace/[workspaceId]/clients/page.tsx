@@ -626,7 +626,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
         backLabel={membership.workspace.name}
       />
 
-      <main className="mx-auto w-full max-w-375 flex-1 px-20 py-10">
+      <main className="mx-auto w-full max-w-375 flex-1 px-4 py-10 sm:px-6 lg:px-20">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
@@ -760,7 +760,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
 
         {currentView === "clients" ? (
           <div className="mb-6">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
               <div className="flex gap-2">
                 <Link
                   href={clientsLayoutHref("board")}
@@ -785,7 +785,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
               </div>
 
               {currentClientsLayout === "list" && (
-                <div className="min-w-0 flex-1 rounded-xl border border-border/60 bg-surface/35 px-2.5 py-2">
+                <div className="w-full rounded-xl border border-border/60 bg-surface/35 px-2.5 py-2 md:min-w-0 md:flex-1">
                   <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-0.5">
                     <span className="shrink-0 px-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/40">
                       Portée
@@ -919,47 +919,46 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                 return (
                   <div
                     key={client.id}
-                    className="group flex items-center gap-4 rounded-xl border border-border/60 bg-surface p-4 transition hover:border-brand-1/30 hover:shadow-[0_4px_20px_-8px_rgba(109,15,242,0.15)]"
+                    className="group flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-surface p-3 transition hover:border-brand-1/30 hover:shadow-[0_4px_20px_-8px_rgba(109,15,242,0.15)] sm:flex-row sm:items-center sm:gap-4 sm:p-4"
                   >
-                    {/* Avatar */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-1 to-brand-2 text-sm font-bold text-white">
-                      {initial}
+                    <div className="flex w-full items-center gap-3 sm:w-auto sm:min-w-0 sm:flex-1">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-1 to-brand-2 text-xs font-bold text-white sm:h-10 sm:w-10 sm:text-sm">
+                        {initial}
+                      </div>
+
+                      <Link
+                        href={`/workspace/${workspaceId}/clients/${client.id}`}
+                        className="min-w-0 flex-1"
+                      >
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="text-sm font-semibold text-foreground">
+                            {client.fullName}
+                          </span>
+                          {client.company && (
+                            <span className="text-xs text-foreground/40">
+                              · {client.company}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 sm:gap-x-3">
+                          {client.email && (
+                            <span className="truncate text-[11px] text-foreground/40 sm:text-xs">
+                              {client.email}
+                            </span>
+                          )}
+                          {client.phone && (
+                            <span className="text-[11px] text-foreground/40 sm:text-xs">
+                              {client.phone}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
                     </div>
 
-                    {/* Main info */}
-                    <Link
-                      href={`/workspace/${workspaceId}/clients/${client.id}`}
-                      className="min-w-0 flex-1"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">
-                          {client.fullName}
-                        </span>
-                        {client.company && (
-                          <span className="text-xs text-foreground/40">
-                            · {client.company}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                        {client.email && (
-                          <span className="text-xs text-foreground/40">
-                            {client.email}
-                          </span>
-                        )}
-                        {client.phone && (
-                          <span className="text-xs text-foreground/40">
-                            {client.phone}
-                          </span>
-                        )}
-                      </div>
-                    </Link>
-
-                    {/* Badges */}
-                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
                       {client.nextFollowUpAt && (
                         <span
-                          className={`text-xs font-medium ${
+                          className={`text-[11px] font-medium sm:text-xs ${
                             isOverdue ? "text-red-400" : "text-foreground/40"
                           }`}
                         >
@@ -968,24 +967,24 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                         </span>
                       )}
                       <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${PRIORITY_CLASSES[client.priority]}`}
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${PRIORITY_CLASSES[client.priority]}`}
                       >
                         {PRIORITY_LABELS[client.priority]}
                       </span>
                       <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_CLASSES[client.status]}`}
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${STATUS_CLASSES[client.status]}`}
                       >
                         {STATUS_LABELS[client.status]}
                       </span>
                       <Link
                         href={previewHref(client.id)}
-                        className="rounded-lg border border-border/70 bg-surface-2 px-2.5 py-1 text-[11px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-brand-2"
+                        className="rounded-lg border border-border/70 bg-surface-2 px-2 py-1 text-[10px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-brand-2 sm:px-2.5 sm:text-[11px]"
                       >
                         Aperçu
                       </Link>
                       <Link
                         href={`/workspace/${workspaceId}/clients/${client.id}`}
-                        className="rounded-lg bg-brand-1/10 px-2.5 py-1 text-[11px] font-semibold text-brand-2 transition hover:bg-brand-1/20"
+                        className="rounded-lg bg-brand-1/10 px-2 py-1 text-[10px] font-semibold text-brand-2 transition hover:bg-brand-1/20 sm:px-2.5 sm:text-[11px]"
                       >
                         Ouvrir
                       </Link>

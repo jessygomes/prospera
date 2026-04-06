@@ -539,7 +539,7 @@ export default async function ClientDetailPage({
         backLabel="Clients"
       />
 
-      <main className="mx-auto w-full max-w-400 flex-1 px-20 py-8">
+      <main className="mx-auto w-full max-w-400 flex-1 px-4 py-8 sm:px-6 lg:px-20">
         <div className="mb-6 rounded-2xl border border-border/60 bg-surface p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
@@ -625,67 +625,69 @@ export default async function ClientDetailPage({
             </div>
           </div>
 
-          <div className="mt-4 inline-flex rounded-xl border border-border/60 bg-surface-2/30 p-1">
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}?view=info`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                currentView === "info"
-                  ? "bg-brand-1 text-white"
-                  : "text-foreground/55 hover:text-foreground"
-              }`}
-            >
-              Infos client
-            </Link>
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}?view=actions`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                currentView === "actions"
-                  ? "bg-brand-1 text-white"
-                  : "text-foreground/55 hover:text-foreground"
-              }`}
-            >
-              Actions commerciales
-            </Link>
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}?view=projects`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                currentView === "projects"
-                  ? "bg-brand-1 text-white"
-                  : "text-foreground/55 hover:text-foreground"
-              }`}
-            >
-              Projets
-            </Link>
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}?view=documents`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                currentView === "documents"
-                  ? "bg-brand-1 text-white"
-                  : "text-foreground/55 hover:text-foreground"
-              }`}
-            >
-              Documents
-              {client._count.documents > 0 && (
-                <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
-                  {client._count.documents}
-                </span>
-              )}
-            </Link>
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}?view=notes`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                currentView === "notes"
-                  ? "bg-brand-1 text-white"
-                  : "text-foreground/55 hover:text-foreground"
-              }`}
-            >
-              Notes
-              {client._count.clientNotes > 0 && (
-                <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
-                  {client._count.clientNotes}
-                </span>
-              )}
-            </Link>
+          <div className="mt-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="inline-flex min-w-max rounded-xl border border-border/60 bg-surface-2/30 p-1">
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}?view=info`}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  currentView === "info"
+                    ? "bg-brand-1 text-white"
+                    : "text-foreground/55 hover:text-foreground"
+                }`}
+              >
+                Infos client
+              </Link>
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}?view=actions`}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  currentView === "actions"
+                    ? "bg-brand-1 text-white"
+                    : "text-foreground/55 hover:text-foreground"
+                }`}
+              >
+                Actions commerciales
+              </Link>
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}?view=projects`}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  currentView === "projects"
+                    ? "bg-brand-1 text-white"
+                    : "text-foreground/55 hover:text-foreground"
+                }`}
+              >
+                Projets
+              </Link>
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}?view=documents`}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  currentView === "documents"
+                    ? "bg-brand-1 text-white"
+                    : "text-foreground/55 hover:text-foreground"
+                }`}
+              >
+                Documents
+                {client._count.documents > 0 && (
+                  <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
+                    {client._count.documents}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}?view=notes`}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  currentView === "notes"
+                    ? "bg-brand-1 text-white"
+                    : "text-foreground/55 hover:text-foreground"
+                }`}
+              >
+                Notes
+                {client._count.clientNotes > 0 && (
+                  <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
+                    {client._count.clientNotes}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
         </div>
 

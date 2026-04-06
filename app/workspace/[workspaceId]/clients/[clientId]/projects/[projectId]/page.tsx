@@ -125,7 +125,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         backLabel={project.client.fullName}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-20 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-20">
         {/* Header */}
         <div className="mb-6 rounded-2xl border border-border/60 bg-surface p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
