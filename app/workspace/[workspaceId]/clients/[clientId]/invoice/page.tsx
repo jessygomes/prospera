@@ -6,13 +6,13 @@ import { AppNavbar } from "@/components/shared/app-navbar";
 import { signOutAction } from "@/app/dashboard/actions";
 import { prisma } from "@/lib/prisma";
 
-import { QuotePdfGenerator } from "../quote-pdf-generator";
+import { InvoicePdfGenerator } from "../invoice-pdf-generator";
 
 type PageProps = {
   params: Promise<{ workspaceId: string; clientId: string }>;
 };
 
-export default async function ClientQuotePage({ params }: PageProps) {
+export default async function ClientInvoicePage({ params }: PageProps) {
   const { workspaceId, clientId } = await params;
 
   const session = await auth();
@@ -32,7 +32,6 @@ export default async function ClientQuotePage({ params }: PageProps) {
       fullName: true,
       company: true,
       email: true,
-      notes: true,
       projects: {
         select: { id: true, name: true },
         orderBy: { createdAt: "desc" },
@@ -44,6 +43,24 @@ export default async function ClientQuotePage({ params }: PageProps) {
   if (!client) {
     redirect(`/workspace/${workspaceId}/clients`);
   }
+
+  const quoteSources = await prisma.invoice.findMany({
+    where: {
+      workspaceId,
+      clientId,
+      invoiceNumber: {
+        startsWith: "DEV-",
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+    select: {
+      id: true,
+      invoiceNumber: true,
+      issueDate: true,
+      total: true,
+    },
+  });
 
   const displayName =
     session.user?.name ?? session.user?.email ?? "Utilisateur";
@@ -63,7 +80,7 @@ export default async function ClientQuotePage({ params }: PageProps) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-2/70">
-                Devis client
+                Facture client
               </p>
               <h1 className="mt-1 font-heading text-2xl font-bold text-foreground">
                 {client.company ?? "Entreprise non renseignee"}
@@ -75,28 +92,46 @@ export default async function ClientQuotePage({ params }: PageProps) {
               )}
             </div>
 
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}`}
-              className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground/65 transition hover:text-foreground"
-            >
-              Retour fiche client
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}/quote`}
+                className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground/65 transition hover:text-foreground"
+              >
+                Creer un devis
+              </Link>
+              <Link
+                href={`/workspace/${workspaceId}/clients/${client.id}`}
+                className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground/65 transition hover:text-foreground"
+              >
+                Retour fiche client
+              </Link>
+            </div>
           </div>
         </div>
 
-        <QuotePdfGenerator
+        <InvoicePdfGenerator
           workspaceId={workspaceId}
           clientId={client.id}
           clientCompany={client.company ?? "Entreprise non renseignee"}
           clientEmail={client.email}
-          defaultSummary=""
-          defaultPages={[]}
+          quoteSources={quoteSources.map((quote) => ({
+            id: quote.id,
+            invoiceNumber: quote.invoiceNumber,
+            issueDateLabel: new Intl.DateTimeFormat("fr-FR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }).format(quote.issueDate),
+            totalLabel: new Intl.NumberFormat("fr-FR", {
+              style: "currency",
+              currency: "EUR",
+            }).format(Number(quote.total)),
+          }))}
           projectOptions={client.projects.map((project) => ({
             id: project.id,
             name: project.name,
           }))}
           userInfo={{
-            name: session.user?.name ?? "",
             email: session.user?.email ?? "",
           }}
         />

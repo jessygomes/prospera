@@ -150,7 +150,7 @@ function buildFallbackConfidence(params: {
 
 type PageProps = {
   params: Promise<{ workspaceId: string; clientId: string }>;
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; financeSort?: string }>;
 };
 
 export default async function ClientDetailPage({
@@ -158,7 +158,9 @@ export default async function ClientDetailPage({
   searchParams,
 }: PageProps) {
   const { workspaceId, clientId } = await params;
-  const { view: rawView } = await searchParams;
+  const { view: rawView, financeSort: rawFinanceSort } = await searchParams;
+  const financeSort =
+    rawFinanceSort === "oldest" ? "oldest" : ("newest" as const);
   const currentView =
     rawView === "actions"
       ? "actions"
@@ -166,9 +168,11 @@ export default async function ClientDetailPage({
         ? "projects"
         : rawView === "documents"
           ? "documents"
-          : rawView === "notes"
-            ? "notes"
-            : "info";
+          : rawView === "finance"
+            ? "finance"
+            : rawView === "notes"
+              ? "notes"
+              : "info";
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -249,6 +253,27 @@ export default async function ClientDetailPage({
           createdAt: true,
         },
       },
+      invoices: {
+        orderBy:
+          financeSort === "oldest"
+            ? [{ issueDate: "asc" }, { createdAt: "asc" }]
+            : [{ issueDate: "desc" }, { createdAt: "desc" }],
+        take: 80,
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          issueDate: true,
+          dueDate: true,
+          total: true,
+          project: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
       documents: {
         where: { projectId: null },
         orderBy: { createdAt: "desc" },
@@ -304,6 +329,27 @@ export default async function ClientDetailPage({
   if (!client) {
     redirect(`/workspace/${workspaceId}/clients`);
   }
+
+  const [quoteCount, invoiceCount] = await Promise.all([
+    prisma.invoice.count({
+      where: {
+        workspaceId,
+        clientId: client.id,
+        invoiceNumber: {
+          startsWith: "DEV-",
+        },
+      },
+    }),
+    prisma.invoice.count({
+      where: {
+        workspaceId,
+        clientId: client.id,
+        invoiceNumber: {
+          startsWith: "FAC-",
+        },
+      },
+    }),
+  ]);
 
   const latestAdviceGeneration = await prisma.aiGeneration.findFirst({
     where: {
@@ -529,6 +575,21 @@ export default async function ClientDetailPage({
     })
     .filter((title): title is string => !!title);
 
+  const clientFormSnapshot = {
+    id: client.id,
+    fullName: client.fullName,
+    email: client.email,
+    phone: client.phone,
+    company: client.company,
+    jobTitle: client.jobTitle,
+    website: client.website,
+    status: client.status,
+    priority: client.priority,
+    source: client.source,
+    budgetEstimated: client.budgetEstimated,
+    notes: client.notes,
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppNavbar
@@ -572,15 +633,9 @@ export default async function ClientDetailPage({
             >
               Retour liste
             </Link>
-            <Link
-              href={`/workspace/${workspaceId}/clients/${client.id}/quote`}
-              className="shrink-0 rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-4"
-            >
-              Creer un devis
-            </Link>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-7">
             <div className="rounded-lg border border-border/50 bg-surface-2/30 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-foreground/40">
                 Actions
@@ -599,10 +654,16 @@ export default async function ClientDetailPage({
             </div>
             <div className="rounded-lg border border-border/50 bg-surface-2/30 px-3 py-2">
               <p className="text-[10px] uppercase tracking-wider text-foreground/40">
+                Devis
+              </p>
+              <p className="text-sm font-bold text-foreground">{quoteCount}</p>
+            </div>
+            <div className="rounded-lg border border-border/50 bg-surface-2/30 px-3 py-2">
+              <p className="text-[10px] uppercase tracking-wider text-foreground/40">
                 Factures
               </p>
               <p className="text-sm font-bold text-foreground">
-                {client._count.invoices}
+                {invoiceCount}
               </p>
             </div>
             <div className="rounded-lg border border-border/50 bg-surface-2/30 px-3 py-2">
@@ -631,67 +692,99 @@ export default async function ClientDetailPage({
             </div>
           </div>
 
-          <div className="mt-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex min-w-max rounded-xl border border-border/60 bg-surface-2/30 p-1">
+          <div className="mt-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="inline-flex min-w-max rounded-xl border border-border/60 bg-surface-2/30 p-1">
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=info`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "info"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Infos client
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=actions`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "actions"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Actions commerciales
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=projects`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "projects"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Projets
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=documents`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "documents"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Documents
+                  {client._count.documents > 0 && (
+                    <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
+                      {client._count.documents}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=finance`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "finance"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Devis & factures
+                  {client.invoices.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
+                      {client.invoices.length}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=notes`}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    currentView === "notes"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/55 hover:text-foreground"
+                  }`}
+                >
+                  Notes
+                  {client._count.clientNotes > 0 && (
+                    <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
+                      {client._count.clientNotes}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
               <Link
-                href={`/workspace/${workspaceId}/clients/${client.id}?view=info`}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  currentView === "info"
-                    ? "bg-brand-1 text-white"
-                    : "text-foreground/55 hover:text-foreground"
-                }`}
+                href={`/workspace/${workspaceId}/clients/${client.id}/quote`}
+                className="rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-4"
               >
-                Infos client
+                Créer un devis
               </Link>
               <Link
-                href={`/workspace/${workspaceId}/clients/${client.id}?view=actions`}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  currentView === "actions"
-                    ? "bg-brand-1 text-white"
-                    : "text-foreground/55 hover:text-foreground"
-                }`}
+                href={`/workspace/${workspaceId}/clients/${client.id}/invoice`}
+                className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground/65 transition hover:text-foreground"
               >
-                Actions commerciales
-              </Link>
-              <Link
-                href={`/workspace/${workspaceId}/clients/${client.id}?view=projects`}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  currentView === "projects"
-                    ? "bg-brand-1 text-white"
-                    : "text-foreground/55 hover:text-foreground"
-                }`}
-              >
-                Projets
-              </Link>
-              <Link
-                href={`/workspace/${workspaceId}/clients/${client.id}?view=documents`}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  currentView === "documents"
-                    ? "bg-brand-1 text-white"
-                    : "text-foreground/55 hover:text-foreground"
-                }`}
-              >
-                Documents
-                {client._count.documents > 0 && (
-                  <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
-                    {client._count.documents}
-                  </span>
-                )}
-              </Link>
-              <Link
-                href={`/workspace/${workspaceId}/clients/${client.id}?view=notes`}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  currentView === "notes"
-                    ? "bg-brand-1 text-white"
-                    : "text-foreground/55 hover:text-foreground"
-                }`}
-              >
-                Notes
-                {client._count.clientNotes > 0 && (
-                  <span className="ml-1.5 rounded-full bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold">
-                    {client._count.clientNotes}
-                  </span>
-                )}
+                Créer une facture
               </Link>
             </div>
           </div>
@@ -703,7 +796,7 @@ export default async function ClientDetailPage({
               <section className="rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
                 <ClientDetailForm
                   workspaceId={workspaceId}
-                  client={client}
+                  client={clientFormSnapshot}
                   canDelete={isManager}
                 />
               </section>
@@ -911,6 +1004,122 @@ export default async function ClientDetailPage({
               clientId={client.id}
               documents={client.documents}
             />
+          </div>
+        ) : currentView === "finance" ? (
+          <div className="rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-heading text-lg font-bold text-foreground">
+                Devis et factures
+              </h2>
+              <div className="inline-flex rounded-lg border border-border/60 bg-surface-2 p-1 text-xs font-semibold">
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=finance&financeSort=newest`}
+                  className={`rounded-md px-2 py-1 transition ${
+                    financeSort === "newest"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  Plus récent
+                </Link>
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${client.id}?view=finance&financeSort=oldest`}
+                  className={`rounded-md px-2 py-1 transition ${
+                    financeSort === "oldest"
+                      ? "bg-brand-1 text-white"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  Plus ancien
+                </Link>
+              </div>
+            </div>
+
+            {client.invoices.length === 0 ? (
+              <p className="text-sm text-foreground/50">
+                Aucun devis ou facture pour ce client.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-border/60 text-left text-[11px] uppercase tracking-wider text-foreground/45">
+                      <th className="px-2 py-2">Type</th>
+                      <th className="px-2 py-2">Numero</th>
+                      <th className="px-2 py-2">Statut</th>
+                      <th className="px-2 py-2">Date</th>
+                      <th className="px-2 py-2">Echeance</th>
+                      <th className="px-2 py-2">Projet</th>
+                      <th className="px-2 py-2">PDF</th>
+                      <th className="px-2 py-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {client.invoices.map((invoice) => {
+                      const isQuote = invoice.invoiceNumber.startsWith("DEV-");
+                      return (
+                        <tr
+                          key={invoice.id}
+                          className="border-b border-border/40 text-foreground/80"
+                        >
+                          <td className="px-2 py-2">
+                            <span className="inline-flex items-center rounded-full border border-border/60 bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-foreground/65">
+                              {isQuote ? "Devis" : "Facture"}
+                            </span>
+                          </td>
+                          <td className="px-2 py-2 font-semibold text-foreground">
+                            {invoice.invoiceNumber}
+                          </td>
+                          <td className="px-2 py-2">{invoice.status}</td>
+                          <td className="px-2 py-2">
+                            {new Intl.DateTimeFormat("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }).format(invoice.issueDate)}
+                          </td>
+                          <td className="px-2 py-2">
+                            {invoice.dueDate
+                              ? new Intl.DateTimeFormat("fr-FR", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                }).format(invoice.dueDate)
+                              : "—"}
+                          </td>
+                          <td className="px-2 py-2">
+                            {invoice.project ? (
+                              <Link
+                                href={`/workspace/${workspaceId}/clients/${client.id}/projects/${invoice.project.id}`}
+                                className="text-brand-2/75 transition hover:text-brand-2"
+                              >
+                                {invoice.project.name}
+                              </Link>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="px-2 py-2">
+                            <a
+                              href={`/workspace/${workspaceId}/clients/${client.id}/invoices/${invoice.id}/pdf`}
+                              className="inline-flex items-center rounded-md border border-border/60 bg-surface-2 px-2 py-1 text-[11px] font-semibold text-foreground/65 transition hover:text-foreground"
+                            >
+                              Regenerer PDF
+                            </a>
+                          </td>
+                          <td className="px-2 py-2 text-right font-semibold text-foreground">
+                            {new Intl.NumberFormat("fr-FR", {
+                              style: "currency",
+                              currency: "EUR",
+                            }).format(Number(invoice.total))}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         ) : (
           <div>

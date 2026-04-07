@@ -210,7 +210,7 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4"
+            className="cursor-pointer rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4"
           >
             Modifier
           </button>

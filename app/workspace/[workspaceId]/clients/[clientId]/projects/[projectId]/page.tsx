@@ -42,12 +42,30 @@ function formatDate(date: Date | null | undefined): string {
   }).format(date);
 }
 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+}
+
+const PRICING_LABELS = {
+  FIXED: "Forfait",
+  HOURLY: "Horaire",
+} as const;
+
 type PageProps = {
   params: Promise<{ workspaceId: string; clientId: string; projectId: string }>;
+  searchParams: Promise<{ edit?: string }>;
 };
 
-export default async function ProjectDetailPage({ params }: PageProps) {
+export default async function ProjectDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { workspaceId, clientId, projectId } = await params;
+  const { edit } = await searchParams;
+  const isEditMode = edit === "1";
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -103,6 +121,17 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           uploadedBy: { select: { name: true, email: true } },
         },
       },
+      invoices: {
+        orderBy: { issueDate: "desc" },
+        take: 40,
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          issueDate: true,
+          total: true,
+        },
+      },
       _count: { select: { invoices: true, documents: true } },
     },
   });
@@ -152,6 +181,21 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              {isEditMode ? (
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${clientId}/projects/${project.id}`}
+                  className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground/65 transition hover:text-foreground"
+                >
+                  Annuler
+                </Link>
+              ) : (
+                <Link
+                  href={`/workspace/${workspaceId}/clients/${clientId}/projects/${project.id}?edit=1`}
+                  className="rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-4"
+                >
+                  Modifier
+                </Link>
+              )}
               {project.websiteUrl && (
                 <a
                   href={project.websiteUrl}
@@ -178,13 +222,120 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Formulaire d'édition */}
-        <ProjectDetailForm
-          project={project}
-          workspaceId={workspaceId}
-          clientId={clientId}
-          isManager={isManager}
-        />
+        {isEditMode ? (
+          <ProjectDetailForm
+            project={project}
+            workspaceId={workspaceId}
+            clientId={clientId}
+            isManager={isManager}
+          />
+        ) : (
+          <section className="rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
+            <h2 className="mb-4 font-heading text-lg font-bold text-foreground">
+              Informations du projet
+            </h2>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Nom du projet
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {project.name}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Type de tarification
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {PRICING_LABELS[project.pricingType]}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Budget estime
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {project.budgetEstimated != null
+                    ? formatCurrency(project.budgetEstimated)
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Budget final
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {project.budgetFinal != null
+                    ? formatCurrency(project.budgetFinal)
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Taux horaire
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {project.hourlyRate != null
+                    ? `${formatCurrency(project.hourlyRate)} / h`
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Lien du projet
+                </p>
+                {project.websiteUrl ? (
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 block truncate text-sm font-semibold text-brand-2/75 hover:text-brand-2"
+                  >
+                    {project.websiteUrl}
+                  </a>
+                ) : (
+                  <p className="mt-1 text-sm font-semibold text-foreground">
+                    —
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Date de debut
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {formatDate(project.startDate)}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Deadline
+                </p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {formatDate(project.deadline)}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-surface-2/20 px-3 py-2 md:col-span-2">
+                <p className="text-[11px] uppercase tracking-wider text-foreground/45">
+                  Description
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm font-semibold text-foreground">
+                  {project.description || "—"}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="mt-5">
           <ProjectDocumentsSection
@@ -193,6 +344,42 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             projectId={project.id}
             documents={project.documents}
           />
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
+          <h2 className="mb-4 font-heading text-lg font-bold text-foreground">
+            Devis et factures lies
+          </h2>
+          {project.invoices.length === 0 ? (
+            <p className="text-sm text-foreground/50">
+              Aucun devis ou facture lie a ce projet pour le moment.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {project.invoices.map((invoice) => {
+                const isQuote = invoice.invoiceNumber.startsWith("DEV-");
+                return (
+                  <li
+                    key={invoice.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 bg-surface-2/20 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {invoice.invoiceNumber}
+                      </p>
+                      <p className="text-xs text-foreground/45">
+                        {isQuote ? "Devis" : "Facture"} · {invoice.status} ·{" "}
+                        {formatDate(invoice.issueDate)}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground/80">
+                      {formatCurrency(Number(invoice.total))}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
         {/* Historique des statuts */}

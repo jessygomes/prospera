@@ -55,6 +55,7 @@ const quotePayloadSchema = z.object({
   maintenance: z.object({
     description: z.string().trim().min(1),
   }),
+  projectId: z.string().trim().optional(),
   items: z
     .array(
       z.object({
@@ -1061,6 +1062,26 @@ export async function POST(
 
     const payload = parsed.data;
 
+    let linkedProjectId: string | null = null;
+    if (payload.projectId) {
+      const linkedProject = await prisma.project.findFirst({
+        where: {
+          id: payload.projectId,
+          workspaceId,
+          clientId,
+        },
+        select: { id: true },
+      });
+
+      if (!linkedProject) {
+        return new Response("Projet introuvable pour ce client.", {
+          status: 400,
+        });
+      }
+
+      linkedProjectId = linkedProject.id;
+    }
+
     const allItems = [...payload.items];
 
     const subtotal = allItems.reduce((sum, item) => sum + item.priceHt, 0);
@@ -1110,6 +1131,7 @@ export async function POST(
         ].join("\n\n"),
         workspaceId,
         clientId: client.id,
+        projectId: linkedProjectId,
         createdById: userId,
         items: {
           create: allItems.map((item, index) => ({

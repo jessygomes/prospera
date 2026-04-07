@@ -14,6 +14,11 @@ type SitePageDraft = {
   description: string;
 };
 
+type ProjectOption = {
+  id: string;
+  name: string;
+};
+
 type Props = {
   workspaceId: string;
   clientId: string;
@@ -21,6 +26,7 @@ type Props = {
   clientEmail: string | null;
   defaultSummary: string;
   defaultPages: string[];
+  projectOptions: ProjectOption[];
   userInfo: {
     name: string;
     email: string;
@@ -56,6 +62,7 @@ export function QuotePdfGenerator({
   clientEmail,
   defaultSummary,
   defaultPages,
+  projectOptions,
   userInfo,
 }: Props) {
   const [isPending, startTransition] = useTransition();
@@ -90,7 +97,7 @@ export function QuotePdfGenerator({
     "La première version du site web pourra être livrée dans un délai maximum de 2 à 3 semaines à compter de la réception de l’ensemble des éléments de contenu (textes, images, vidéo). S’il n’y pas de retour client, ce sera la livraison finale. La seconde version du site web pourra être livrée dans un délai maximum de 2 semaines à compter de la réception des retours clients.",
   );
   const [paymentTerms, setPaymentTerms] = useState(
-    "50% a la commande, 50% a la livraison.",
+    "50% à la commande, 50% à la livraison.",
   );
 
   const [maintenanceDescription, setMaintenanceDescription] = useState(
@@ -98,6 +105,7 @@ export function QuotePdfGenerator({
   );
 
   const [items, setItems] = useState<QuoteItemDraft[]>([createDraftItem()]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
 
   const previewTotalHt = useMemo(() => {
     return items.reduce((total, item) => {
@@ -196,6 +204,7 @@ export function QuotePdfGenerator({
               maintenance: {
                 description: maintenanceDescription,
               },
+              projectId: selectedProjectId || undefined,
               items: preparedItems,
             }),
           },
@@ -301,6 +310,23 @@ export function QuotePdfGenerator({
               Entreprise cliente
             </label>
             <input value={clientCompany} readOnly className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-semibold text-foreground/60">
+              Lier a un projet (optionnel)
+            </label>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Aucun projet</option>
+              {projectOptions.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
