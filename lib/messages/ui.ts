@@ -3,7 +3,7 @@ export const UI_MESSAGES = {
     signIn: {
       title: "Connexion",
       subtitle:
-        "Connecte-toi puis cree ton workspace ou rejoins-en un existant.",
+        "Connecte-toi puis crée ton workspace ou rejoins-en un existant.",
       emailLabel: "Email",
       passwordLabel: "Mot de passe",
       submit: "Se connecter",

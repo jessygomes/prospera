@@ -572,6 +572,12 @@ export default async function ClientDetailPage({
             >
               Retour liste
             </Link>
+            <Link
+              href={`/workspace/${workspaceId}/clients/${client.id}/quote`}
+              className="shrink-0 rounded-lg bg-brand-1 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-4"
+            >
+              Creer un devis
+            </Link>
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
