@@ -108,10 +108,77 @@ export function NewClientForm({ workspaceId }: Props) {
             />
           </div>
           <div>
+            <label className={labelClass}>Type d entreprise</label>
+            <input
+              {...register("companyType")}
+              placeholder="SaaS, E-commerce, Agence..."
+              className={inputClass}
+            />
+          </div>
+          <div>
             <label className={labelClass}>Poste</label>
             <input
               {...register("jobTitle")}
               placeholder="Directeur Marketing"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>SIRET</label>
+            <input
+              {...register("siret")}
+              placeholder="14 chiffres"
+              className={inputClass}
+            />
+            {errors.siret && <p className={errorClass}>{errors.siret.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>SIREN</label>
+            <input
+              {...register("siren")}
+              placeholder="9 chiffres"
+              className={inputClass}
+            />
+            {errors.siren && <p className={errorClass}>{errors.siren.message}</p>}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Adresse ligne 1</label>
+            <input
+              {...register("addressLine1")}
+              placeholder="12 Rue des Lilas"
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Adresse ligne 2</label>
+            <input
+              {...register("addressLine2")}
+              placeholder="Bâtiment B, 2e étage"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Code postal</label>
+            <input
+              {...register("postalCode")}
+              placeholder="75001"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Ville</label>
+            <input
+              {...register("city")}
+              placeholder="Paris"
+              className={inputClass}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Pays</label>
+            <input
+              {...register("country")}
+              placeholder="France"
               className={inputClass}
             />
           </div>
@@ -155,6 +222,30 @@ export function NewClientForm({ workspaceId }: Props) {
             />
             {errors.website && (
               <p className={errorClass}>{errors.website.message}</p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>LinkedIn</label>
+            <input
+              {...register("linkedinUrl")}
+              type="url"
+              placeholder="https://www.linkedin.com/company/..."
+              className={inputClass}
+            />
+            {errors.linkedinUrl && (
+              <p className={errorClass}>{errors.linkedinUrl.message}</p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>Instagram</label>
+            <input
+              {...register("instagramUrl")}
+              type="url"
+              placeholder="https://www.instagram.com/..."
+              className={inputClass}
+            />
+            {errors.instagramUrl && (
+              <p className={errorClass}>{errors.instagramUrl.message}</p>
             )}
           </div>
         </div>
@@ -213,6 +304,17 @@ export function NewClientForm({ workspaceId }: Props) {
             />
             {errors.budgetEstimated && (
               <p className={errorClass}>{errors.budgetEstimated.message}</p>
+            )}
+          </div>
+          <div className="sm:col-span-3">
+            <label className={labelClass}>Contrat signé le</label>
+            <input
+              {...register("contractSignedAt")}
+              type="date"
+              className={inputClass}
+            />
+            {errors.contractSignedAt && (
+              <p className={errorClass}>{errors.contractSignedAt.message}</p>
             )}
           </div>
         </div>

@@ -128,17 +128,31 @@ model Client {
   lastName         String?
   fullName         String
 
+  addressLine1     String?
+  addressLine2     String?
+  city             String?
+  postalCode       String?
+  country          String?
+
+
   email            String?
   phone            String?
   company          String?
+  companyType       String? // Type d'entreprise (ex: SaaS, E-commerce, Agence, etc.)
+  siret            String?  // 14 chiffres
+  siren            String?  // 9 chiffres
+
   jobTitle         String?
   website          String?
+  linkedinUrl      String?
+  instagramUrl     String?
 
   // Partie prospection
   status           ClientStatus      @default(PROSPECT) // Statut du client dans le pipeline de vente
   priority         ClientPriority    @default(MEDIUM) // Priorité du client pour les relances et actions commerciales
   source           ClientSource?      // Source : d'ou vient le client (Instagram, LinkedIn, Email, Referral, Website, Discord, Other)
   budgetEstimated  Float?
+  contractSignedAt DateTime?
 
   lastContactAt    DateTime?
   nextFollowUpAt   DateTime? // Date de la prochaine relance prévu avec le client

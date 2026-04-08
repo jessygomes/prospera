@@ -52,8 +52,18 @@ type ClientSnapshot = {
   email: string | null;
   phone: string | null;
   company: string | null;
+  companyType: string | null;
   jobTitle: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  postalCode: string | null;
+  country: string | null;
+  siret: string | null;
+  siren: string | null;
   website: string | null;
+  linkedinUrl: string | null;
+  instagramUrl: string | null;
   status:
     | "PROSPECT"
     | "CONTACTED"
@@ -74,6 +84,7 @@ type ClientSnapshot = {
     | "OTHER"
     | null;
   budgetEstimated: number | null;
+  contractSignedAt: Date | null;
   notes: string | null;
 };
 
@@ -99,12 +110,25 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
     email: client.email ?? "",
     phone: client.phone ?? "",
     company: client.company ?? "",
+    companyType: client.companyType ?? "",
     jobTitle: client.jobTitle ?? "",
+    addressLine1: client.addressLine1 ?? "",
+    addressLine2: client.addressLine2 ?? "",
+    city: client.city ?? "",
+    postalCode: client.postalCode ?? "",
+    country: client.country ?? "",
+    siret: client.siret ?? "",
+    siren: client.siren ?? "",
     website: client.website ?? "",
+    linkedinUrl: client.linkedinUrl ?? "",
+    instagramUrl: client.instagramUrl ?? "",
     status: client.status,
     priority: client.priority,
     source: client.source ?? undefined,
     budgetEstimated: client.budgetEstimated ?? undefined,
+    contractSignedAt: client.contractSignedAt
+      ? client.contractSignedAt.toISOString().slice(0, 10)
+      : "",
     notes: client.notes ?? "",
   };
 
@@ -127,12 +151,23 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
       email: values.email,
       phone: values.phone,
       company: values.company,
+      companyType: values.companyType,
       jobTitle: values.jobTitle,
+      addressLine1: values.addressLine1,
+      addressLine2: values.addressLine2,
+      city: values.city,
+      postalCode: values.postalCode,
+      country: values.country,
+      siret: values.siret,
+      siren: values.siren,
       website: values.website,
+      linkedinUrl: values.linkedinUrl,
+      instagramUrl: values.instagramUrl,
       status: values.status,
       priority: values.priority,
       source: values.source,
       budgetEstimated: values.budgetEstimated,
+      contractSignedAt: values.contractSignedAt,
       notes: values.notes,
     };
 
@@ -197,6 +232,21 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
           maximumFractionDigits: 0,
         }).format(client.budgetEstimated)
       : "—";
+  const contractSignedAtLabel = client.contractSignedAt
+    ? new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(client.contractSignedAt)
+    : "—";
+  const addressLabel = [
+    client.addressLine1,
+    client.addressLine2,
+    [client.postalCode, client.city].filter(Boolean).join(" "),
+    client.country,
+  ]
+    .filter((part) => !!part && part.trim().length > 0)
+    .join("\n");
 
   if (!isEditing) {
     return (
@@ -239,10 +289,48 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
             </div>
             <div>
               <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Type d entreprise
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.companyType ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
                 Poste
               </dt>
               <dd className="mt-0.5 text-foreground/75">
                 {client.jobTitle ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                SIRET
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.siret ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                SIREN
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">
+                {client.siren ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Contrat signé le
+              </dt>
+              <dd className="mt-0.5 text-foreground/75">{contractSignedAtLabel}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Adresse
+              </dt>
+              <dd className="mt-0.5 whitespace-pre-wrap text-foreground/75">
+                {addressLabel || "—"}
               </dd>
             </div>
           </dl>
@@ -291,6 +379,44 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
                     className="font-medium text-brand-2 hover:underline"
                   >
                     {client.website}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                LinkedIn
+              </dt>
+              <dd className="mt-0.5 break-all text-foreground/75">
+                {client.linkedinUrl ? (
+                  <a
+                    href={client.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-brand-2 hover:underline"
+                  >
+                    {client.linkedinUrl}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
+                Instagram
+              </dt>
+              <dd className="mt-0.5 break-all text-foreground/75">
+                {client.instagramUrl ? (
+                  <a
+                    href={client.instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-brand-2 hover:underline"
+                  >
+                    {client.instagramUrl}
                   </a>
                 ) : (
                   "—"
@@ -382,8 +508,42 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
             <input {...register("company")} className={inputClass} />
           </div>
           <div>
+            <label className={labelClass}>Type d entreprise</label>
+            <input {...register("companyType")} className={inputClass} />
+          </div>
+          <div>
             <label className={labelClass}>Poste</label>
             <input {...register("jobTitle")} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>SIRET</label>
+            <input {...register("siret")} className={inputClass} />
+            {errors.siret && <p className={errorClass}>{errors.siret.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>SIREN</label>
+            <input {...register("siren")} className={inputClass} />
+            {errors.siren && <p className={errorClass}>{errors.siren.message}</p>}
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Adresse ligne 1</label>
+            <input {...register("addressLine1")} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Adresse ligne 2</label>
+            <input {...register("addressLine2")} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Code postal</label>
+            <input {...register("postalCode")} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Ville</label>
+            <input {...register("city")} className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Pays</label>
+            <input {...register("country")} className={inputClass} />
           </div>
         </div>
       </section>
@@ -409,6 +569,28 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
             <input {...register("website")} type="url" className={inputClass} />
             {errors.website && (
               <p className={errorClass}>{errors.website.message}</p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>LinkedIn</label>
+            <input
+              {...register("linkedinUrl")}
+              type="url"
+              className={inputClass}
+            />
+            {errors.linkedinUrl && (
+              <p className={errorClass}>{errors.linkedinUrl.message}</p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>Instagram</label>
+            <input
+              {...register("instagramUrl")}
+              type="url"
+              className={inputClass}
+            />
+            {errors.instagramUrl && (
+              <p className={errorClass}>{errors.instagramUrl.message}</p>
             )}
           </div>
         </div>
@@ -491,6 +673,17 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
             />
             {errors.budgetEstimated && (
               <p className={errorClass}>{errors.budgetEstimated.message}</p>
+            )}
+          </div>
+          <div className="sm:col-span-3">
+            <label className={labelClass}>Contrat signé le</label>
+            <input
+              {...register("contractSignedAt")}
+              type="date"
+              className={inputClass}
+            />
+            {errors.contractSignedAt && (
+              <p className={errorClass}>{errors.contractSignedAt.message}</p>
             )}
           </div>
           <div className="sm:col-span-3">

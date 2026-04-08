@@ -552,7 +552,7 @@ export function ClientActionRowExpandable({
             </div>
           </div>
 
-          <div className="mt-2 border-t border-border/50 pt-2 text-[11px] text-foreground/50">
+          <div className="mt-2 border-t border-border/50 pt-2 text-[11px] text-foreground/50 flex flex-wrap items-center gap-3 sm:flex-nowrap">
             <p>
               Créé par:{" "}
               {action.createdBy?.name ?? action.createdBy?.email ?? "—"}
