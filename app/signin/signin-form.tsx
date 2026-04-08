@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signInAction } from "./actions";
 import { UI_MESSAGES } from "@/lib/messages/ui";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth";
+import Image from "next/image";
 
 type SignInFormProps = {
   callbackUrl?: string;
@@ -50,10 +51,17 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
   return (
     <div className="w-full max-w-sm">
       {/* Logo */}
-      <div className="mb-8 text-center">
-        <span className="font-heading text-2xl font-bold text-foreground">
+      <div className="text-center">
+        {/* <span className="font-heading text-2xl font-bold text-foreground">
           Prospera
-        </span>
+        </span> */}
+        <Image
+          src="/logo.png"
+          alt="Prospera"
+          width={100}
+          height={100}
+          className="h-32 w-32 mx-auto"
+        />
       </div>
 
       <div className="rounded-2xl border border-border/60 p-8 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.3)]">

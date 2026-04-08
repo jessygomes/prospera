@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 type AppNavbarProps = {
@@ -46,9 +47,16 @@ export function AppNavbar({
               <span className="select-none text-border/60">/</span>
             </>
           ) : null}
-          <span className="font-heading text-base font-bold tracking-tight text-foreground">
+          {/* <span className="font-heading text-base font-bold tracking-tight text-foreground">
             Prospera
-          </span>
+          </span> */}
+          <Image
+            src="/logo.png"
+            alt="Prospera"
+            width={32}
+            height={32}
+            className="h-12 w-12"
+          />
         </div>
 
         {onSignOut ? (

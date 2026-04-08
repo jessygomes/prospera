@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpAction } from "./actions";
 import { UI_MESSAGES } from "@/lib/messages/ui";
 import { signUpSchema, type SignUpInput } from "@/lib/validation/auth";
+import Image from "next/image";
 
 type SignUpFormProps = {
   callbackUrl?: string;
@@ -56,10 +57,17 @@ export function SignUpForm({ callbackUrl }: SignUpFormProps) {
   return (
     <div className="w-full max-w-2xl">
       {/* Logo */}
-      <div className="mb-8 text-center">
-        <span className="font-heading text-2xl font-bold text-foreground">
+      <div className="text-center">
+        {/* <span className="font-heading text-2xl font-bold text-foreground">
           Prospera
-        </span>
+        </span> */}
+        <Image
+          src="/logo.png"
+          alt="Prospera"
+          width={100}
+          height={100}
+          className="h-32 w-32 mx-auto"
+        />
       </div>
 
       <div className="rounded-2xl border border-border/60  p-8 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.3)]">

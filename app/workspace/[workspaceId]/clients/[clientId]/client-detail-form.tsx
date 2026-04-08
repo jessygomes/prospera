@@ -323,7 +323,9 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
               <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
                 Contrat signé le
               </dt>
-              <dd className="mt-0.5 text-foreground/75">{contractSignedAtLabel}</dd>
+              <dd className="mt-0.5 text-foreground/75">
+                {contractSignedAtLabel}
+              </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-[11px] uppercase tracking-wider text-foreground/35">
@@ -518,12 +520,16 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
           <div>
             <label className={labelClass}>SIRET</label>
             <input {...register("siret")} className={inputClass} />
-            {errors.siret && <p className={errorClass}>{errors.siret.message}</p>}
+            {errors.siret && (
+              <p className={errorClass}>{errors.siret.message}</p>
+            )}
           </div>
           <div>
             <label className={labelClass}>SIREN</label>
             <input {...register("siren")} className={inputClass} />
-            {errors.siren && <p className={errorClass}>{errors.siren.message}</p>}
+            {errors.siren && (
+              <p className={errorClass}>{errors.siren.message}</p>
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className={labelClass}>Adresse ligne 1</label>
