@@ -108,6 +108,8 @@ async function buildInvoicePdf(input: {
   invoiceNumber: string;
   issuedAt: Date;
   clientCompany: string;
+  clientAddressLines: string[];
+  clientSiret: string | null;
   creator: {
     name: string;
     email: string;
@@ -247,7 +249,7 @@ async function buildInvoicePdf(input: {
   };
 
   const drawProviderCard = () => {
-    const cardHeight = 86;
+    const cardHeight = 78;
     ensureSpace(cardHeight + 10);
 
     page.drawRectangle({
@@ -259,53 +261,72 @@ async function buildInvoicePdf(input: {
       borderColor: palette.border,
       borderWidth: 0.9,
     });
-    page.drawRectangle({
-      x: MARGIN,
-      y: y - 24,
-      width: contentWidth,
-      height: 24,
-      color: palette.accent,
-    });
-    page.drawText("INFORMATIONS", {
-      x: MARGIN + 10,
-      y: y - 16,
-      size: 10,
-      font: titleFont,
-      color: rgb(1, 1, 1),
-    });
 
     const leftX = MARGIN + 12;
     const rightX = MARGIN + contentWidth / 2 + 6;
-    const firstRowY = y - 40;
-    const secondRowY = y - 62;
+    const firstLabelY = y - 16;
+    const firstValueY = y - 29;
+    const secondLabelY = y - 44;
+    const secondValueY = y - 57;
 
-    page.drawText(`Nom : ${input.creator.name}`, {
+    page.drawText("NOM", {
       x: leftX,
-      y: firstRowY,
-      size: 10,
-      font: bodyFont,
-      color: palette.text,
-      maxWidth: contentWidth / 2 - 18,
+      y: firstLabelY,
+      size: 8,
+      font: titleFont,
+      color: palette.muted,
     });
-    page.drawText(`SIRET : ${input.creator.siret}`, {
-      x: rightX,
-      y: firstRowY,
-      size: 10,
-      font: bodyFont,
-      color: palette.text,
-      maxWidth: contentWidth / 2 - 18,
-    });
-    page.drawText(`Email : ${input.creator.email}`, {
+    page.drawText(input.creator.name, {
       x: leftX,
-      y: secondRowY,
+      y: firstValueY,
       size: 10,
       font: bodyFont,
       color: palette.text,
       maxWidth: contentWidth / 2 - 18,
     });
-    page.drawText(`Téléphone : ${input.creator.phone}`, {
+
+    page.drawText("SIRET", {
       x: rightX,
-      y: secondRowY,
+      y: firstLabelY,
+      size: 8,
+      font: titleFont,
+      color: palette.muted,
+    });
+    page.drawText(input.creator.siret, {
+      x: rightX,
+      y: firstValueY,
+      size: 10,
+      font: bodyFont,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 18,
+    });
+
+    page.drawText("EMAIL", {
+      x: leftX,
+      y: secondLabelY,
+      size: 8,
+      font: titleFont,
+      color: palette.muted,
+    });
+    page.drawText(input.creator.email, {
+      x: leftX,
+      y: secondValueY,
+      size: 10,
+      font: bodyFont,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 18,
+    });
+
+    page.drawText("TELEPHONE", {
+      x: rightX,
+      y: secondLabelY,
+      size: 8,
+      font: titleFont,
+      color: palette.muted,
+    });
+    page.drawText(input.creator.phone, {
+      x: rightX,
+      y: secondValueY,
       size: 10,
       font: bodyFont,
       color: palette.text,
@@ -580,7 +601,22 @@ async function buildInvoicePdf(input: {
   const interSectionSpacing = 12;
   const attentionToFinancialSpacing = 18;
   y -= interSectionSpacing;
-  const attentionCardHeight = 44;
+
+  const attentionLeftLines = [input.clientCompany];
+  const attentionRightLines = [
+    ...input.clientAddressLines,
+    `SIRET : ${input.clientSiret ?? "—"}`,
+  ];
+  const leftBlockHeight = 18 + attentionLeftLines.length * 13;
+  const rightBlockHeight = 18 + attentionRightLines.length * 13;
+  const attentionCardHeight = Math.max(
+    52,
+    Math.max(leftBlockHeight, rightBlockHeight) + 10,
+  );
+  const attentionLeftX = MARGIN + 12;
+  const attentionRightX = MARGIN + contentWidth / 2 + 10;
+  const columnDividerX = MARGIN + contentWidth / 2;
+
   ensureSpace(attentionCardHeight + 10);
   page.drawRectangle({
     x: MARGIN,
@@ -598,20 +634,57 @@ async function buildInvoicePdf(input: {
     height: attentionCardHeight,
     color: palette.accent,
   });
+  page.drawLine({
+    start: { x: columnDividerX, y },
+    end: { x: columnDividerX, y: y - attentionCardHeight },
+    thickness: 0.6,
+    color: palette.border,
+  });
+
   page.drawText("A L'ATTENTION DE", {
-    x: MARGIN + 12,
+    x: attentionLeftX,
     y: y - 14,
     size: 8,
     font: titleFont,
     color: palette.muted,
   });
-  page.drawText(input.clientCompany, {
-    x: MARGIN + 12,
-    y: y - 31,
-    size: 12,
+  page.drawText("ADRESSE / SIRET", {
+    x: attentionRightX,
+    y: y - 14,
+    size: 8,
     font: titleFont,
-    color: palette.text,
+    color: palette.muted,
   });
+
+  let attentionLeftY = y - 31;
+  attentionLeftLines.forEach((line, index) => {
+    page.drawText(line, {
+      x: attentionLeftX,
+      y: attentionLeftY,
+      size: index === 0 ? 12 : 10,
+      font: index === 0 ? titleFont : bodyFont,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 22,
+    });
+    attentionLeftY -= 13;
+  });
+
+  let attentionRightY = y - 31;
+  attentionRightLines.forEach((line, index) => {
+    page.drawText(line, {
+      x: attentionRightX,
+      y: attentionRightY,
+      size: 10,
+      font:
+        index === attentionRightLines.length - 1 && input.clientSiret
+          ? titleFont
+          : bodyFont,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 22,
+    });
+    attentionRightY -= 13;
+  });
+
   y -= attentionCardHeight + attentionToFinancialSpacing;
 
   drawSectionTitle("Détail financier");
@@ -708,6 +781,12 @@ export async function POST(
         id: true,
         company: true,
         email: true,
+        addressLine1: true,
+        addressLine2: true,
+        city: true,
+        postalCode: true,
+        country: true,
+        siret: true,
       },
     });
 
@@ -841,6 +920,16 @@ export async function POST(
       invoiceNumber,
       issuedAt: issuedAtDate,
       clientCompany: client.company ?? "Entreprise non renseignee",
+      clientAddressLines: [
+        [
+          client.addressLine1,
+          client.addressLine2,
+          [client.postalCode, client.city].filter(Boolean).join(" "),
+        ]
+          .filter((part): part is string => Boolean(part && part.trim()))
+          .join(", "),
+      ].filter((line): line is string => Boolean(line && line.trim())),
+      clientSiret: client.siret,
       creator: data.creator,
       paymentTerms: data.paymentTerms,
       conditionsText: data.conditionsText,

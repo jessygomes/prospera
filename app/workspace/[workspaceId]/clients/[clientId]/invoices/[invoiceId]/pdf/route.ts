@@ -63,6 +63,8 @@ async function buildPdf(input: {
   issueDate: Date;
   dueDate: Date | null;
   clientCompany: string;
+  clientAddressLines: string[];
+  clientSiret: string | null;
   creatorName: string;
   notes: string | null;
   subtotal: number;
@@ -191,14 +193,90 @@ async function buildPdf(input: {
 
   y -= headerHeight + 18;
 
-  page.drawText(`A l'attention de : ${input.clientCompany}`, {
+  const attentionLeftLines = [input.clientCompany];
+  const attentionRightLines = [
+    ...input.clientAddressLines,
+    `SIRET : ${input.clientSiret ?? "—"}`,
+  ];
+  const leftBlockHeight = 18 + attentionLeftLines.length * 13;
+  const rightBlockHeight = 18 + attentionRightLines.length * 13;
+  const attentionCardHeight = Math.max(
+    52,
+    Math.max(leftBlockHeight, rightBlockHeight) + 10,
+  );
+  const attentionLeftX = MARGIN + 12;
+  const attentionRightX = MARGIN + contentWidth / 2 + 10;
+  const columnDividerX = MARGIN + contentWidth / 2;
+
+  ensureSpace(attentionCardHeight + 10);
+  page.drawRectangle({
     x: MARGIN,
-    y,
-    size: 11,
-    font: fontBold,
-    color: palette.text,
+    y: y - attentionCardHeight,
+    width: contentWidth,
+    height: attentionCardHeight,
+    color: palette.surface,
+    borderColor: palette.border,
+    borderWidth: 0.8,
   });
-  y -= 24;
+  page.drawRectangle({
+    x: MARGIN,
+    y: y - attentionCardHeight,
+    width: 4,
+    height: attentionCardHeight,
+    color: palette.accent,
+  });
+  page.drawLine({
+    start: { x: columnDividerX, y },
+    end: { x: columnDividerX, y: y - attentionCardHeight },
+    thickness: 0.6,
+    color: palette.border,
+  });
+
+  page.drawText("A L'ATTENTION DE", {
+    x: attentionLeftX,
+    y: y - 14,
+    size: 8,
+    font: fontBold,
+    color: palette.muted,
+  });
+  page.drawText("ADRESSE / SIRET", {
+    x: attentionRightX,
+    y: y - 14,
+    size: 8,
+    font: fontBold,
+    color: palette.muted,
+  });
+
+  let attentionLeftY = y - 31;
+  attentionLeftLines.forEach((line, index) => {
+    page.drawText(line, {
+      x: attentionLeftX,
+      y: attentionLeftY,
+      size: index === 0 ? 12 : 10,
+      font: index === 0 ? fontBold : fontRegular,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 22,
+    });
+    attentionLeftY -= 13;
+  });
+
+  let attentionRightY = y - 31;
+  attentionRightLines.forEach((line, index) => {
+    page.drawText(line, {
+      x: attentionRightX,
+      y: attentionRightY,
+      size: 10,
+      font:
+        index === attentionRightLines.length - 1 && input.clientSiret
+          ? fontBold
+          : fontRegular,
+      color: palette.text,
+      maxWidth: contentWidth / 2 - 22,
+    });
+    attentionRightY -= 13;
+  });
+
+  y -= attentionCardHeight + 18;
 
   page.drawText("Detail financier", {
     x: MARGIN,
@@ -468,6 +546,12 @@ export async function GET(
         client: {
           select: {
             company: true,
+            addressLine1: true,
+            addressLine2: true,
+            city: true,
+            postalCode: true,
+            country: true,
+            siret: true,
           },
         },
         createdBy: {
@@ -498,6 +582,18 @@ export async function GET(
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
       clientCompany: invoice.client.company ?? "Entreprise non renseignee",
+      clientAddressLines: [
+        [
+          invoice.client.addressLine1,
+          invoice.client.addressLine2,
+          [invoice.client.postalCode, invoice.client.city]
+            .filter(Boolean)
+            .join(" "),
+        ]
+          .filter((part): part is string => Boolean(part && part.trim()))
+          .join(", "),
+      ].filter((line): line is string => Boolean(line && line.trim())),
+      clientSiret: invoice.client.siret,
       creatorName: invoice.createdBy?.name ?? "",
       notes: invoice.notes,
       subtotal,

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { UTApi } from "uploadthing/server";
 
 import { auth } from "@/auth";
 import { generateInviteToken, hashInviteToken } from "@/lib/invite-link";
@@ -242,4 +243,86 @@ export async function updateWorkspaceNameAction(
   revalidatePath(`/workspace/${workspaceId}`);
   revalidatePath(`/workspace/${workspaceId}/settings`);
   return {};
+}
+
+export async function deleteWorkspaceAction(
+  formData: FormData,
+): Promise<WorkspaceSettingsActionState> {
+  const callerId = await getCurrentUserId();
+  const workspaceId = String(formData.get("workspaceId") ?? "");
+  const confirmName = String(formData.get("confirmName") ?? "").trim();
+
+  if (!workspaceId) {
+    return { error: ERROR_MESSAGES.common.invalidData };
+  }
+
+  const callerMembership = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: callerId, workspaceId } },
+    select: {
+      role: true,
+      workspace: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!callerMembership || callerMembership.role !== "OWNER") {
+    return {
+      error: "Seul le proprietaire du workspace peut le supprimer.",
+    };
+  }
+
+  if (!callerMembership.workspace) {
+    return { error: ERROR_MESSAGES.workspace.notFound };
+  }
+
+  if (confirmName !== callerMembership.workspace.name) {
+    return {
+      error:
+        "Le nom saisi ne correspond pas. Saisis exactement le nom du workspace pour confirmer.",
+    };
+  }
+
+  const documents = await prisma.document.findMany({
+    where: { workspaceId },
+    select: { url: true },
+  });
+
+  const uploadThingKeys = Array.from(
+    new Set(
+      documents
+        .map((document) => {
+          try {
+            const parsed = new URL(document.url);
+            const host = parsed.hostname.toLowerCase();
+            const isUploadThing =
+              host.includes("utfs.io") ||
+              host.includes("ufs.sh") ||
+              host.includes("uploadthing");
+            if (!isUploadThing) return null;
+
+            return parsed.pathname.split("/").filter(Boolean).pop() ?? null;
+          } catch {
+            return null;
+          }
+        })
+        .filter((key): key is string => Boolean(key)),
+    ),
+  );
+
+  if (uploadThingKeys.length > 0) {
+    try {
+      const utapi = new UTApi();
+      await utapi.deleteFiles(uploadThingKeys);
+    } catch {
+      // Suppression distante best effort: on continue la suppression base.
+    }
+  }
+
+  await prisma.workspace.delete({ where: { id: workspaceId } });
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

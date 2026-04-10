@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { signOutAction } from "@/app/dashboard/actions";
 import { InviteLinksPanel } from "../invite-links-panel";
 import { MemberActions } from "../member-actions";
+import { WorkspaceDeleteForm } from "../workspace-delete-form";
 import { WorkspaceNameForm } from "../workspace-name-form";
 
 type PageProps = {
@@ -41,6 +42,7 @@ export default async function WorkspaceSettingsPage({ params }: PageProps) {
   }
 
   const isManager = membership.role === "OWNER" || membership.role === "ADMIN";
+  const isOwner = membership.role === "OWNER";
 
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId },
@@ -194,6 +196,12 @@ export default async function WorkspaceSettingsPage({ params }: PageProps) {
               }))}
             />
           ) : null}
+
+          <WorkspaceDeleteForm
+            workspaceId={workspaceId}
+            workspaceName={membership.workspace.name}
+            canDelete={isOwner}
+          />
         </div>
       </main>
     </div>
