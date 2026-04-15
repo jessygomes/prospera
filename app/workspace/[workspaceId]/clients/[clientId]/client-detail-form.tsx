@@ -85,6 +85,8 @@ type ClientSnapshot = {
     | null;
   budgetEstimated: number | null;
   contractSignedAt: Date | null;
+  clientObjective: string | null;
+  commercialObjective: string | null;
   notes: string | null;
 };
 
@@ -130,6 +132,8 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
     contractSignedAt: client.contractSignedAt
       ? client.contractSignedAt.toISOString().slice(0, 10)
       : "",
+    clientObjective: client.clientObjective ?? "",
+    commercialObjective: client.commercialObjective ?? "",
     notes: client.notes ?? "",
   };
 
@@ -169,6 +173,8 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
       source: values.source,
       budgetEstimated: values.budgetEstimated,
       contractSignedAt: values.contractSignedAt,
+      clientObjective: values.clientObjective,
+      commercialObjective: values.commercialObjective,
       notes: values.notes,
     };
 
@@ -448,6 +454,28 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
 
           <div className="mt-2.5 border-t border-border/50 pt-2.5">
             <p className="text-[11px] uppercase tracking-wider text-foreground/35">
+              Objectif du client
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/75">
+              {client.clientObjective?.trim()
+                ? client.clientObjective
+                : "Aucun objectif client renseigne."}
+            </p>
+          </div>
+
+          <div className="mt-2.5 border-t border-border/50 pt-2.5">
+            <p className="text-[11px] uppercase tracking-wider text-foreground/35">
+              Objectif commercial
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/75">
+              {client.commercialObjective?.trim()
+                ? client.commercialObjective
+                : "Aucun objectif commercial renseigne."}
+            </p>
+          </div>
+
+          <div className="mt-2.5 border-t border-border/50 pt-2.5">
+            <p className="text-[11px] uppercase tracking-wider text-foreground/35">
               Notes
             </p>
             <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground/75">
@@ -680,6 +708,30 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
             )}
           </div>
           <div className="sm:col-span-3">
+            <label className={labelClass}>Objectif du client</label>
+            <textarea
+              {...register("clientObjective")}
+              rows={3}
+              className={`${inputClass} resize-none`}
+            />
+            {errors.clientObjective && (
+              <p className={errorClass}>{errors.clientObjective.message}</p>
+            )}
+          </div>
+          <div className="sm:col-span-3">
+            <label className={labelClass}>
+              Notre objectif commercial / prestation visée
+            </label>
+            <textarea
+              {...register("commercialObjective")}
+              rows={3}
+              className={`${inputClass} resize-none`}
+            />
+            {errors.commercialObjective && (
+              <p className={errorClass}>{errors.commercialObjective.message}</p>
+            )}
+          </div>
+          <div className="sm:col-span-3">
             <label className={labelClass}>Notes</label>
             <textarea
               {...register("notes")}
@@ -701,7 +753,7 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
           <button
             type="submit"
             disabled={isPendingSave || !isDirty}
-            className="rounded-lg bg-brand-1 px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4 disabled:opacity-50"
+            className="cursor-pointer rounded-lg bg-brand-1 px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4 disabled:opacity-50"
           >
             {isPendingSave ? "Sauvegarde…" : "Sauvegarder"}
           </button>
@@ -709,7 +761,7 @@ export function ClientDetailForm({ workspaceId, client }: Props) {
             type="button"
             onClick={cancelEdit}
             disabled={isPendingSave}
-            className="rounded-lg border border-border/70 bg-surface px-4 py-2 text-sm font-medium text-foreground/60 transition hover:text-foreground disabled:opacity-50"
+            className="cursor-pointer rounded-lg border border-border/70 bg-surface px-4 py-2 text-sm font-medium text-foreground/60 transition hover:text-foreground disabled:opacity-50"
           >
             Annuler
           </button>

@@ -97,6 +97,7 @@ function buildFallbackConfidence(params: {
   hasClientNotes: boolean;
   hasBudget: boolean;
   hasCompanyOrRole: boolean;
+  hasObjectiveContext: boolean;
   hasCachedInsights: boolean;
 }): AdviceConfidenceView {
   let score = 35;
@@ -133,6 +134,7 @@ function buildFallbackConfidence(params: {
     params.hasClientNotes ||
     params.hasBudget ||
     params.hasCompanyOrRole ||
+    params.hasObjectiveContext ||
     params.hasCachedInsights
   ) {
     score += 10;
@@ -215,6 +217,8 @@ export default async function ClientDetailPage({
       source: true,
       budgetEstimated: true,
       contractSignedAt: true,
+      clientObjective: true,
+      commercialObjective: true,
       notes: true,
       aiInsights: true,
       tags: true,
@@ -416,6 +420,8 @@ export default async function ClientDetailPage({
       budgetEstimated: client.budgetEstimated,
       company: client.company,
       jobTitle: client.jobTitle,
+      clientObjective: client.clientObjective,
+      commercialObjective: client.commercialObjective,
       notes: client.notes,
       aiInsights: client.aiInsights,
     },
@@ -483,6 +489,8 @@ export default async function ClientDetailPage({
     !!client.notes?.trim() || client.clientNotes.length > 0;
   const hasBudget = client.budgetEstimated !== null;
   const hasCompanyOrRole = !!(client.company || client.jobTitle);
+  const hasObjectiveContext =
+    !!client.clientObjective?.trim() || !!client.commercialObjective?.trim();
   const hasCachedInsights = !!client.aiInsights;
 
   const metadata =
@@ -560,6 +568,7 @@ export default async function ClientDetailPage({
     hasClientNotes,
     hasBudget,
     hasCompanyOrRole,
+    hasObjectiveContext,
     hasCachedInsights,
   });
 
@@ -609,6 +618,8 @@ export default async function ClientDetailPage({
     source: client.source,
     budgetEstimated: client.budgetEstimated,
     contractSignedAt: client.contractSignedAt,
+    clientObjective: client.clientObjective,
+    commercialObjective: client.commercialObjective,
     notes: client.notes,
   };
 
@@ -844,7 +855,7 @@ export default async function ClientDetailPage({
                   interactionsAnalyzed: interactionActions.length,
                   interactionsWithSummary,
                   interactionsStructured,
-                  hasClientNotes,
+                  hasClientNotes: hasClientNotes || hasObjectiveContext,
                   hasBudget,
                   hasCompanyOrRole,
                   hasCachedInsights,

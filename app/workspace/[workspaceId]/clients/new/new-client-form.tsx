@@ -324,6 +324,42 @@ export function NewClientForm({ workspaceId }: Props) {
         </div>
       </section>
 
+      <section>
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-foreground/40">
+          Objectifs
+        </h2>
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className={labelClass}>
+              Objectif du client en nous contactant
+            </label>
+            <textarea
+              {...register("clientObjective")}
+              rows={3}
+              placeholder="Ex: lancer un nouveau site vitrine, gagner en crédibilité, augmenter les demandes entrantes..."
+              className={`${inputClass} resize-none`}
+            />
+            {errors.clientObjective && (
+              <p className={errorClass}>{errors.clientObjective.message}</p>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>
+              Notre objectif commercial / prestation visée
+            </label>
+            <textarea
+              {...register("commercialObjective")}
+              rows={3}
+              placeholder="Ex: proposer la creation d'un site, d'un logo, d'une identité visuelle ou d'un accompagnement mensuel..."
+              className={`${inputClass} resize-none`}
+            />
+            {errors.commercialObjective && (
+              <p className={errorClass}>{errors.commercialObjective.message}</p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Section : Notes */}
       <section>
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-foreground/40">

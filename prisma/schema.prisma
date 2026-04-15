@@ -153,6 +153,8 @@ model Client {
   source           ClientSource?      // Source : d'ou vient le client (Instagram, LinkedIn, Email, Referral, Website, Discord, Other)
   budgetEstimated  Float?
   contractSignedAt DateTime?
+  clientObjective  String? // Objectif exprime par le client en nous contactant.
+  commercialObjective String? // Objectif commercial ou prestation que nous cherchons a vendre.
 
   lastContactAt    DateTime?
   nextFollowUpAt   DateTime? // Date de la prochaine relance prévu avec le client

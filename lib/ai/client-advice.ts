@@ -6,6 +6,8 @@ type AdviceInput = {
     budgetEstimated: number | null;
     company: string | null;
     jobTitle: string | null;
+    clientObjective: string | null;
+    commercialObjective: string | null;
     notes: string | null;
     aiInsights: unknown;
   };
@@ -88,9 +90,8 @@ export function buildClientAdvice(input: AdviceInput): ClientAdvice {
     )
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 8)
-    .map(
-      (action) =>
-        (action.interactionSummary ?? action.description ?? "").toLowerCase(),
+    .map((action) =>
+      (action.interactionSummary ?? action.description ?? "").toLowerCase(),
     );
 
   const completedInteractions = input.actions.filter(
@@ -104,7 +105,8 @@ export function buildClientAdvice(input: AdviceInput): ClientAdvice {
   const outcomeCounts = completedInteractions.reduce<Record<string, number>>(
     (acc, action) => {
       if (action.interactionOutcome) {
-        acc[action.interactionOutcome] = (acc[action.interactionOutcome] ?? 0) + 1;
+        acc[action.interactionOutcome] =
+          (acc[action.interactionOutcome] ?? 0) + 1;
       }
       return acc;
     },
@@ -135,7 +137,7 @@ export function buildClientAdvice(input: AdviceInput): ClientAdvice {
     (a, b) => b[1] - a[1],
   )[0];
 
-  const corpus = `${summaries.join(" ")} ${(input.client.notes ?? "").toLowerCase()}`;
+  const corpus = `${summaries.join(" ")} ${(input.client.clientObjective ?? "").toLowerCase()} ${(input.client.commercialObjective ?? "").toLowerCase()} ${(input.client.notes ?? "").toLowerCase()}`;
 
   const hasPriceObjection = containsAny(corpus, [
     /prix/i,
@@ -192,35 +194,42 @@ export function buildClientAdvice(input: AdviceInput): ClientAdvice {
 
   const nextActionFocus = aiInsights?.nextBestAction
     ? aiInsights.nextBestAction
-    : hasPriceObjection || topObjection?.[0] === "prix"
-    ? "Prochain appel: commencer par reformuler le besoin, puis proposer 2 options (offre allégée vs offre complète) avec impact attendu."
-    : hasDelaySignal || frequentNeedsTime
-      ? "Prochaine relance: poser une question de qualification fermée et obtenir une date de décision précise."
-      : hasNoResponseSignal || frequentNoResponse
-        ? "Prochain message: relance courte avec une seule proposition de créneau et une date limite de réponse."
-        : frequentInterest
-          ? "Prochain appel: verrouiller le plan d'action (étapes, date, responsable) pour transformer l'intérêt en décision."
-          : "Prochain contact: valider les objectifs prioritaires du client et conclure sur une action datée.";
+    : input.client.commercialObjective?.trim()
+      ? `Prochain contact: faire avancer l'objectif commercial prioritaire (${input.client.commercialObjective.trim()}) avec une etape concrete et datee.`
+      : hasPriceObjection || topObjection?.[0] === "prix"
+        ? "Prochain appel: commencer par reformuler le besoin, puis proposer 2 options (offre allégée vs offre complète) avec impact attendu."
+        : hasDelaySignal || frequentNeedsTime
+          ? "Prochaine relance: poser une question de qualification fermée et obtenir une date de décision précise."
+          : hasNoResponseSignal || frequentNoResponse
+            ? "Prochain message: relance courte avec une seule proposition de créneau et une date limite de réponse."
+            : frequentInterest
+              ? "Prochain appel: verrouiller le plan d'action (étapes, date, responsable) pour transformer l'intérêt en décision."
+              : "Prochain contact: valider les objectifs prioritaires du client et conclure sur une action datée.";
 
-  const objectionResponse = hasPriceObjection || topObjection?.[0] === "prix"
-    ? "Réponse objection prix: recadrer sur le ROI (temps gagné, opportunités captées, coût de l'inaction), puis proposer une étape pilote."
-    : hasDelaySignal || topObjection?.[0] === "timing"
-      ? "Réponse objection timing: transformer le 'plus tard' en micro-engagement (15 min d'atelier, mini-livrable, date jalon)."
-      : topObjection
-        ? `Réponse objection dominante (${topObjection[0]}): reformuler, quantifier l'impact business et répondre avec une preuve client similaire.`
-        : "Réponse objections: reformuler l'objection, vérifier l'impact business, répondre avec preuve concrète (cas proche).";
+  const objectionResponse =
+    hasPriceObjection || topObjection?.[0] === "prix"
+      ? "Réponse objection prix: recadrer sur le ROI (temps gagné, opportunités captées, coût de l'inaction), puis proposer une étape pilote."
+      : hasDelaySignal || topObjection?.[0] === "timing"
+        ? "Réponse objection timing: transformer le 'plus tard' en micro-engagement (15 min d'atelier, mini-livrable, date jalon)."
+        : topObjection
+          ? `Réponse objection dominante (${topObjection[0]}): reformuler, quantifier l'impact business et répondre avec une preuve client similaire.`
+          : "Réponse objections: reformuler l'objection, vérifier l'impact business, répondre avec preuve concrète (cas proche).";
 
   const persuasionAngle = aiInsights?.recommendedStrategy
     ? aiInsights.recommendedStrategy
-    : input.client.budgetEstimated && input.client.budgetEstimated > 0
-      ? "Angle recommandé: valeur business mesurable, avec projection alignée au budget estimé et scénario prudent."
-      : "Angle recommandé: démontrer un gain concret rapide et réduire le risque perçu via une première étape légère.";
+    : input.client.clientObjective?.trim() &&
+        input.client.commercialObjective?.trim()
+      ? `Angle recommandé: relier l'objectif client (${input.client.clientObjective.trim()}) a la proposition commerciale (${input.client.commercialObjective.trim()}) avec un resultat concret attendu.`
+      : input.client.budgetEstimated && input.client.budgetEstimated > 0
+        ? "Angle recommandé: valeur business mesurable, avec projection alignée au budget estimé et scénario prudent."
+        : "Angle recommandé: démontrer un gain concret rapide et réduire le risque perçu via une première étape légère.";
 
-  const bestTiming = hasNoResponseSignal || frequentNoResponse
-    ? "Timing conseillé: relance sous 48h, puis dernier rappel 4-5 jours après si aucun retour."
-    : hasDelaySignal || frequentNeedsTime
-      ? "Timing conseillé: relance à la date explicitement convenue; sinon reprendre contact dans 5-7 jours."
-      : "Timing conseillé: maintenir un rythme régulier (3-5 jours ouvrés) jusqu'à obtention d'une décision claire.";
+  const bestTiming =
+    hasNoResponseSignal || frequentNoResponse
+      ? "Timing conseillé: relance sous 48h, puis dernier rappel 4-5 jours après si aucun retour."
+      : hasDelaySignal || frequentNeedsTime
+        ? "Timing conseillé: relance à la date explicitement convenue; sinon reprendre contact dans 5-7 jours."
+        : "Timing conseillé: maintenir un rythme régulier (3-5 jours ouvrés) jusqu'à obtention d'une décision claire.";
 
   return {
     overallReading,

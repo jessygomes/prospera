@@ -83,6 +83,8 @@ export const createClientSchema = z.object({
     if (typeof v === "string") return new Date(v);
     return v;
   }, z.date().optional()),
+  clientObjective: z.string().trim().max(2000).optional(),
+  commercialObjective: z.string().trim().max(2000).optional(),
   notes: z.string().trim().optional(),
 });
 

@@ -177,7 +177,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
 
   const currentView = rawView === "actions" ? "actions" : "clients";
   const currentClientsLayout: ClientsLayout =
-    rawClientsLayout === "list" ? "list" : "board";
+    rawClientsLayout === "board" ? "board" : "list";
   const currentClientsScope: ClientsScope =
     rawClientsScope === "MINE" ? "MINE" : "ALL";
 
@@ -373,6 +373,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
             source: true,
             budgetEstimated: true,
             nextFollowUpAt: true,
+            commercialObjective: true,
             notes: true,
           },
         })
@@ -978,7 +979,7 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                       </span>
                       <Link
                         href={previewHref(client.id)}
-                        className="rounded-lg border border-border/70 bg-surface-2 px-2 py-1 text-[10px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-brand-2 sm:px-2.5 sm:text-[11px]"
+                        className="hidden rounded-lg border border-border/70 bg-surface-2 px-2 py-1 text-[10px] font-semibold text-foreground/60 transition hover:border-brand-1/30 hover:text-brand-2 sm:inline-flex sm:px-2.5 sm:text-[11px]"
                       >
                         Aperçu
                       </Link>
@@ -1103,17 +1104,17 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
           ))}
 
         {previewClient && (
-          <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-            <div className="w-full max-w-lg rounded-2xl border border-border/60 bg-surface p-6 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)]">
-              <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/45 p-3 sm:p-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-border/60 bg-surface p-3 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.5)] sm:p-4 lg:p-5">
+              <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-brand-2/70">
                     Aperçu client
                   </p>
-                  <h2 className="mt-1 font-heading text-2xl font-bold text-foreground">
+                  <h2 className="mt-1 font-heading text-lg font-bold text-foreground sm:text-2xl">
                     {previewClient.fullName}
                   </h2>
-                  <p className="mt-1 text-xs text-foreground/40">
+                  <p className="mt-0.5 text-[11px] text-foreground/40 sm:text-xs">
                     {previewClient.company ?? "Sans entreprise"}
                   </p>
                 </div>
@@ -1125,26 +1126,30 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                 </Link>
               </div>
 
-              <div className="mb-5 grid grid-cols-2 gap-3 text-sm text-foreground/70">
-                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-3">
+              <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-foreground/70 lg:grid-cols-5 sm:mb-4 sm:text-sm">
+                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:p-3">
                   <p className="text-[11px] uppercase tracking-wider text-foreground/40">
                     Email
                   </p>
-                  <p className="mt-1 truncate">{previewClient.email ?? "—"}</p>
+                  <p className="mt-1 wrap-break-word leading-5 sm:truncate">
+                    {previewClient.email ?? "—"}
+                  </p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-3">
+                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:p-3">
                   <p className="text-[11px] uppercase tracking-wider text-foreground/40">
                     Téléphone
                   </p>
-                  <p className="mt-1 truncate">{previewClient.phone ?? "—"}</p>
+                  <p className="mt-1 wrap-break-word leading-5">
+                    {previewClient.phone ?? "—"}
+                  </p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-3">
+                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:p-3">
                   <p className="text-[11px] uppercase tracking-wider text-foreground/40">
                     Statut
                   </p>
                   <p className="mt-1">{STATUS_LABELS[previewClient.status]}</p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-3">
+                <div className="rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:p-3">
                   <p className="text-[11px] uppercase tracking-wider text-foreground/40">
                     Priorité
                   </p>
@@ -1152,29 +1157,44 @@ export default async function ClientsPage({ params, searchParams }: PageProps) {
                     {PRIORITY_LABELS[previewClient.priority]}
                   </p>
                 </div>
+                <div className="col-span-2 rounded-xl border border-border/60 bg-surface-2/40 p-2.5 lg:col-span-1 sm:p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-foreground/40">
+                    Budget estimé
+                  </p>
+                  <p className="mt-1 leading-5">
+                    {previewClient.budgetEstimated
+                      ? `${previewClient.budgetEstimated.toLocaleString("fr-FR")} €`
+                      : "—"}
+                  </p>
+                </div>
               </div>
 
+              {previewClient.commercialObjective && (
+                <div className="mb-3 rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:mb-4 sm:p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-foreground/40">
+                    Objectif commercial
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-foreground/70 sm:text-sm sm:leading-6">
+                    {previewClient.commercialObjective}
+                  </p>
+                </div>
+              )}
+
               {previewClient.notes && (
-                <div className="mb-5 rounded-xl border border-border/60 bg-surface-2/40 p-3">
+                <div className="mb-3 rounded-xl border border-border/60 bg-surface-2/40 p-2.5 sm:mb-4 sm:p-3">
                   <p className="text-[11px] uppercase tracking-wider text-foreground/40">
                     Notes
                   </p>
-                  <p className="mt-1.5 line-clamp-4 text-sm text-foreground/70">
+                  <p className="mt-1 text-xs leading-5 text-foreground/70 sm:text-sm sm:leading-6">
                     {previewClient.notes}
                   </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-foreground/40">
-                  Budget estimé:{" "}
-                  {previewClient.budgetEstimated
-                    ? `${previewClient.budgetEstimated.toLocaleString("fr-FR")} €`
-                    : "—"}
-                </p>
+              <div className="border-t border-border/50 pt-2.5">
                 <Link
                   href={`/workspace/${workspaceId}/clients/${previewClient.id}`}
-                  className="rounded-xl bg-brand-1 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-4"
+                  className="block w-full rounded-xl bg-brand-1 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-brand-4"
                 >
                   Voir fiche complète
                 </Link>

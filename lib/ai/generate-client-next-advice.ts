@@ -29,6 +29,8 @@ type AdviceInput = {
     budgetEstimated: number | null;
     company: string | null;
     jobTitle: string | null;
+    clientObjective: string | null;
+    commercialObjective: string | null;
     notes: string | null;
     aiInsights: unknown;
   };
@@ -91,7 +93,7 @@ const OPENAI_PRICING_PER_1M_TOKENS: Record<
   "gpt-4.1": { input: 2, output: 8 },
 };
 
-const ADVICE_PROMPT_VERSION = "next-action-v3-action-goal";
+const ADVICE_PROMPT_VERSION = "next-action-v4-client-objectives";
 
 const IA_DEBUG = process.env.IA_DEBUG === "true";
 
@@ -224,6 +226,7 @@ function buildPrompt(input: AdviceInput): string {
     "- Analyse les patterns (hésitation, répétition, objections).",
     "- Priorise les signaux implicites.",
     "- Distingue l'objectif de l'action (actionGoal) du résultat de l'interaction (interactionSummary).",
+    "- Tiens compte explicitement de l'objectif du client et de notre objectif commercial.",
     "- Si hésitation → réduire le risque.",
     "- Ton objectif est de maximiser la conversion.",
     "",
@@ -306,6 +309,8 @@ function buildAdviceConfidence(
   }
 
   const hasContextualClientData =
+    !!input.client.clientObjective?.trim() ||
+    !!input.client.commercialObjective?.trim() ||
     !!input.client.notes?.trim() ||
     input.client.budgetEstimated !== null ||
     !!input.client.company ||
