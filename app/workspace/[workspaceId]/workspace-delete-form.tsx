@@ -56,7 +56,8 @@ export function WorkspaceDeleteForm({
       ) : (
         <>
           <label className="mt-4 block text-xs font-semibold text-foreground/60">
-            Saisis exactement le nom du workspace pour confirmer: {workspaceName}
+            Saisis exactement le nom du workspace pour confirmer:{" "}
+            {workspaceName}
           </label>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input

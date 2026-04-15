@@ -130,7 +130,9 @@ export function NewClientForm({ workspaceId }: Props) {
               placeholder="14 chiffres"
               className={inputClass}
             />
-            {errors.siret && <p className={errorClass}>{errors.siret.message}</p>}
+            {errors.siret && (
+              <p className={errorClass}>{errors.siret.message}</p>
+            )}
           </div>
           <div>
             <label className={labelClass}>SIREN</label>
@@ -139,7 +141,9 @@ export function NewClientForm({ workspaceId }: Props) {
               placeholder="9 chiffres"
               className={inputClass}
             />
-            {errors.siren && <p className={errorClass}>{errors.siren.message}</p>}
+            {errors.siren && (
+              <p className={errorClass}>{errors.siren.message}</p>
+            )}
           </div>
 
           <div className="sm:col-span-2">

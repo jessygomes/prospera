@@ -6,7 +6,7 @@ import { AppNavbar } from "@/components/shared/app-navbar";
 import { signOutAction } from "@/app/dashboard/actions";
 import { prisma } from "@/lib/prisma";
 import { buildClientAdvice } from "@/lib/ai/client-advice";
-import { ClientDetailForm } from "./client-detail-form";
+import { ClientDeleteDangerZone, ClientDetailForm } from "./client-detail-form";
 import { ClientActionsSection } from "./client-actions-section";
 import { ClientProjectsSection } from "./client-projects-section";
 import { ClientDocumentsSection } from "./client-documents-section";
@@ -814,14 +814,20 @@ export default async function ClientDetailPage({
 
         {currentView === "info" ? (
           <div className="client-info-layout grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.65fr)_340px]">
-            <div>
+            <div className="space-y-5">
               <section className="rounded-2xl border border-border/60 bg-surface p-5 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.15)]">
                 <ClientDetailForm
                   workspaceId={workspaceId}
                   client={clientFormSnapshot}
-                  canDelete={isManager}
                 />
               </section>
+
+              {isManager && (
+                <ClientDeleteDangerZone
+                  workspaceId={workspaceId}
+                  clientId={client.id}
+                />
+              )}
             </div>
 
             <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">

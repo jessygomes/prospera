@@ -77,15 +77,12 @@ export const createClientSchema = z.object({
     .number()
     .positive(ERROR_MESSAGES.client.invalidBudget)
     .optional(),
-  contractSignedAt: z.preprocess(
-    (v) => {
-      if (v === "" || v == null) return undefined;
-      if (v instanceof Date) return v;
-      if (typeof v === "string") return new Date(v);
-      return v;
-    },
-    z.date().optional(),
-  ),
+  contractSignedAt: z.preprocess((v) => {
+    if (v === "" || v == null) return undefined;
+    if (v instanceof Date) return v;
+    if (typeof v === "string") return new Date(v);
+    return v;
+  }, z.date().optional()),
   notes: z.string().trim().optional(),
 });
 

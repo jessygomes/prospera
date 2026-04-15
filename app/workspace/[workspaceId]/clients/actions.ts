@@ -119,6 +119,41 @@ async function requireWorkspaceMember(workspaceId: string) {
   return { userId, membership };
 }
 
+function extractUploadThingKey(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const isUploadThing =
+      host.includes("utfs.io") ||
+      host.includes("ufs.sh") ||
+      host.includes("uploadthing");
+    if (!isUploadThing) return null;
+
+    return parsed.pathname.split("/").filter(Boolean).pop() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function deleteUploadThingFiles(urls: string[]) {
+  const uploadThingKeys = Array.from(
+    new Set(
+      urls
+        .map((url) => extractUploadThingKey(url))
+        .filter((key): key is string => Boolean(key)),
+    ),
+  );
+
+  if (uploadThingKeys.length === 0) return;
+
+  try {
+    const utapi = new UTApi();
+    await utapi.deleteFiles(uploadThingKeys);
+  } catch {
+    // Suppression distante best effort: on continue la suppression base.
+  }
+}
+
 export async function createClientAction(
   workspaceId: string,
   values: CreateClientInput,
@@ -251,6 +286,13 @@ export async function deleteClientAction(
   if (!client || client.workspaceId !== workspaceId) {
     return { error: "Client introuvable." };
   }
+
+  const documents = await prisma.document.findMany({
+    where: { workspaceId, clientId },
+    select: { url: true },
+  });
+
+  await deleteUploadThingFiles(documents.map((document) => document.url));
 
   await prisma.client.delete({ where: { id: clientId } });
   return null;
@@ -822,24 +864,7 @@ export async function deleteProjectDocumentAction(
     return { error: "Vous ne pouvez pas supprimer ce document." };
   }
 
-  // Best effort: if this is an UploadThing URL, remove remote file too.
-  try {
-    const parsed = new URL(document.url);
-    const host = parsed.hostname.toLowerCase();
-    const isUploadThing =
-      host.includes("utfs.io") ||
-      host.includes("ufs.sh") ||
-      host.includes("uploadthing");
-    if (isUploadThing) {
-      const key = parsed.pathname.split("/").filter(Boolean).pop();
-      if (key) {
-        const utapi = new UTApi();
-        await utapi.deleteFiles(key);
-      }
-    }
-  } catch {
-    // Ignore URL parse issues and continue DB deletion.
-  }
+  await deleteUploadThingFiles([document.url]);
 
   await prisma.document.delete({ where: { id: documentId } });
   return null;
@@ -864,24 +889,7 @@ export async function deleteClientDocumentAction(
     return { error: "Vous ne pouvez pas supprimer ce document." };
   }
 
-  // Best effort: if this is an UploadThing URL, remove remote file too.
-  try {
-    const parsed = new URL(document.url);
-    const host = parsed.hostname.toLowerCase();
-    const isUploadThing =
-      host.includes("utfs.io") ||
-      host.includes("ufs.sh") ||
-      host.includes("uploadthing");
-    if (isUploadThing) {
-      const key = parsed.pathname.split("/").filter(Boolean).pop();
-      if (key) {
-        const utapi = new UTApi();
-        await utapi.deleteFiles(key);
-      }
-    }
-  } catch {
-    // Ignore URL parse issues and continue DB deletion.
-  }
+  await deleteUploadThingFiles([document.url]);
 
   await prisma.document.delete({ where: { id: documentId } });
   return null;

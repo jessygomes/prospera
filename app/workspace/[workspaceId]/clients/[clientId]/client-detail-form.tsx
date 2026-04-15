@@ -91,19 +91,20 @@ type ClientSnapshot = {
 type Props = {
   workspaceId: string;
   client: ClientSnapshot;
-  canDelete: boolean;
 };
 
-export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
+type DeleteDangerZoneProps = {
+  workspaceId: string;
+  clientId: string;
+};
+
+export function ClientDetailForm({ workspaceId, client }: Props) {
   const router = useRouter();
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(client.status);
   const [statusChangeNote, setStatusChangeNote] = useState("");
   const [isPendingSave, startSaveTransition] = useTransition();
-  const [isPendingDelete, startDeleteTransition] = useTransition();
 
   const defaultFormValues = {
     fullName: client.fullName,
@@ -193,25 +194,11 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
     });
   });
 
-  function handleDelete() {
-    setDeleteError(null);
-    startDeleteTransition(async () => {
-      const result = await deleteClientAction(workspaceId, client.id);
-      if (result?.error) {
-        setDeleteError(result.error);
-        return;
-      }
-      router.push(`/workspace/${workspaceId}/clients`);
-    });
-  }
-
   function cancelEdit() {
     reset(defaultFormValues);
     setSelectedStatus(client.status);
     setStatusChangeNote("");
     setSaveError(null);
-    setDeleteError(null);
-    setConfirmDelete(false);
     setIsEditing(false);
   }
 
@@ -486,7 +473,7 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
         <button
           type="button"
           onClick={cancelEdit}
-          disabled={isPendingSave || isPendingDelete}
+          disabled={isPendingSave}
           className="rounded-lg border border-border/70 bg-surface px-3 py-1.5 text-xs font-semibold text-foreground/60 transition hover:text-foreground disabled:opacity-50"
         >
           Annuler modifications
@@ -713,7 +700,7 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={isPendingSave || isPendingDelete || !isDirty}
+            disabled={isPendingSave || !isDirty}
             className="rounded-lg bg-brand-1 px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_20px_-4px_rgba(109,15,242,0.4)] transition hover:bg-brand-4 disabled:opacity-50"
           >
             {isPendingSave ? "Sauvegarde…" : "Sauvegarder"}
@@ -721,54 +708,87 @@ export function ClientDetailForm({ workspaceId, client, canDelete }: Props) {
           <button
             type="button"
             onClick={cancelEdit}
-            disabled={isPendingSave || isPendingDelete}
+            disabled={isPendingSave}
             className="rounded-lg border border-border/70 bg-surface px-4 py-2 text-sm font-medium text-foreground/60 transition hover:text-foreground disabled:opacity-50"
           >
             Annuler
           </button>
         </div>
+      </div>
+    </form>
+  );
+}
 
-        {canDelete && (
-          <div className="flex items-center gap-2">
-            {!confirmDelete ? (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                disabled={isPendingSave || isPendingDelete}
-                className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-50"
-              >
-                Supprimer le client
-              </button>
-            ) : (
-              <>
-                <span className="text-xs text-foreground/40">Confirmer ?</span>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isPendingSave || isPendingDelete}
-                  className="rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/25 disabled:opacity-50"
-                >
-                  {isPendingDelete ? "…" : "Oui"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  disabled={isPendingSave || isPendingDelete}
-                  className="rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-medium text-foreground/50 transition hover:text-foreground disabled:opacity-50"
-                >
-                  Non
-                </button>
-              </>
-            )}
+export function ClientDeleteDangerZone({
+  workspaceId,
+  clientId,
+}: DeleteDangerZoneProps) {
+  const router = useRouter();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isPendingDelete, startDeleteTransition] = useTransition();
+
+  function handleDelete() {
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const result = await deleteClientAction(workspaceId, clientId);
+      if (result?.error) {
+        setDeleteError(result.error);
+        return;
+      }
+      router.push(`/workspace/${workspaceId}/clients`);
+    });
+  }
+
+  return (
+    <section className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 shadow-[0_12px_32px_-20px_rgba(0,0,0,0.3)]">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div>
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-red-300/90">
+            Zone dangereuse
+          </h2>
+          <p className="mt-0.5 text-xs text-red-100/70">
+            Suppression définitive du client et de toutes ses données liées.
+          </p>
+        </div>
+
+        {!confirmDelete ? (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            disabled={isPendingDelete}
+            className="cursor-pointer rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25 disabled:opacity-50"
+          >
+            Supprimer le client
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-red-100/80">Confirmer ?</span>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isPendingDelete}
+              className="cursor-pointer rounded-lg border border-red-500/40 bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/30 disabled:opacity-50"
+            >
+              {isPendingDelete ? "Suppression..." : "Oui"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              disabled={isPendingDelete}
+              className="cursor-pointer rounded-lg border border-border/70 bg-surface-2 px-3 py-1.5 text-xs font-medium text-foreground/60 transition hover:text-foreground disabled:opacity-50"
+            >
+              Annuler
+            </button>
           </div>
         )}
       </div>
 
       {deleteError && (
-        <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <p className="mt-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300">
           {deleteError}
         </p>
       )}
-    </form>
+    </section>
   );
 }
